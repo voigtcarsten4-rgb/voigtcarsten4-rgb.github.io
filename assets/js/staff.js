@@ -22,7 +22,6 @@
   function isToday(ts) { const d = new Date(ts), n = new Date(); return d.toDateString() === n.toDateString(); }
   function lastGuestMsg(o) { const g = (o.messages || []).filter(m => m.from === 'guest'); return g.length ? g[g.length - 1] : null; }
 
-  /* ---------- Render board ---------- */
   function render() {
     const ev = BELL.currentEvent();
     el('#staff-event').textContent = '📍 ' + ev.name;
@@ -55,10 +54,17 @@
     const note = lastGuestMsg(o);
     const isNew = !seen.has(o.id);
     const unread = o.unreadStaff > 0;
-    return `<div class="ticket ${TCLASS[o.status]} ${unread ? 'has-unread' : ''}" ${isNew ? 'style="animation:rise .35s var(--ease)"' : ''}>
+    const age = BELL.minsAgo(o.createdAt);
+    let urg = '', badge = '';
+    if (o.status !== 'done' && o.status !== 'ready') {
+      if (age >= 8) { urg = 'urge-late'; badge = '<span class="wait-badge late">' + age + ' Min</span>'; }
+      else if (age >= 4) { urg = 'urge-warn'; badge = '<span class="wait-badge warn">' + age + ' Min</span>'; }
+      else { badge = '<span class="wait-badge ok">' + age + ' Min</span>'; }
+    }
+    return `<div class="ticket ${TCLASS[o.status]} ${urg} ${unread ? 'has-unread' : ''}" ${isNew ? 'style="animation:rise .35s var(--ease)"' : ''}>
       <div class="t-top">
         <span class="pno">${esc(o.pickup)}</span>
-        <span class="ago">${BELL.timeAgo(o.createdAt)}</span>
+        <span class="ago">${BELL.timeAgo(o.createdAt)}${badge}</span>
       </div>
       <span class="status-pill s-${o.status}" style="font-size:11px;padding:3px 9px">${BELL.STATUS_SHORT[o.status]}</span>
       <div class="items">
@@ -76,7 +82,6 @@
     </div>`;
   }
 
-  /* ---------- Drawer (chat) ---------- */
   function openDrawer(id) {
     drawerId = id;
     BELL.markRead(id, 'staff');
@@ -108,7 +113,6 @@
     toast('Antwort gesendet', 'ok', 1400);
   }
 
-  /* ---------- Demo walk-in order ---------- */
   function makeDemoOrder() {
     const ev = BELL.currentEvent();
     const list = BELL.eventProducts();
@@ -124,13 +128,12 @@
     buzz(20);
   }
 
-  /* ---------- Events ---------- */
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-act]');
     if (a) {
       const id = a.dataset.id;
       if (a.dataset.act === 'advance') {
-        const o = BELL.getOrder(id); const before = o.status;
+        const o = BELL.getOrder(id);
         const updated = BELL.advanceStatus(id);
         toast(o.pickup + ' → ' + BELL.STATUS_SHORT[updated.status], 'ok', 1500); buzz(14);
       } else if (a.dataset.act === 'revert') {
@@ -156,5 +159,5 @@
 
   BELL.onChange(render);
   render();
-  setInterval(render, 10000); // refresh "vor X Min"
+  setInterval(render, 8000); // refresh Wartezeit-Ampel + "vor X Min"
 })();
