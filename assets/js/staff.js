@@ -14,12 +14,11 @@
   const NEXT_LABEL = { received: 'Annehmen', prep: 'Auf den Grill 🔥', grill: 'Fast fertig', almost: 'Abholbereit', ready: 'Abschliessen' };
   const TCLASS = { received: '', prep: 't-prep', grill: 't-grill', almost: 't-almost', ready: 't-ready', done: '' };
   const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar', bon: 'Bell Bon' };
-  const STAFF_QUICK = ['Alles klar 👍', 'In ~5 Min bereit', 'Ohne Zwiebeln – notiert', 'Bitte vorne abholen', 'Gerne, kannst du ergänzen'];
+  const STAFF_QUICK = ['Alles klar', 'Ist notiert', 'Bitte zur Ausgabe kommen', 'Bestellung ist gleich bereit', 'In ~5 Min bereit'];
 
   const seen = new Set();
   let drawerId = null;
 
-  // Crew-Heartbeat: solange diese Ansicht offen ist, steuert die Crew den Status.
   BELL.setCrewActive();
   setInterval(BELL.setCrewActive, 5000);
   ['focus', 'visibilitychange', 'click', 'keydown'].forEach(ev =>
@@ -28,7 +27,6 @@
   function isToday(ts) { const d = new Date(ts), n = new Date(); return d.toDateString() === n.toDateString(); }
   function lastGuestMsg(o) { const g = (o.messages || []).filter(m => m.from === 'guest'); return g.length ? g[g.length - 1] : null; }
 
-  /* ---------- Betriebsmodus: Digitale Zahlung ⇄ Bon-System ---------- */
   function updateModeBtn() {
     const b = el('#btn-mode'); if (!b) return;
     const bon = BELL.getSettings().mode === 'bon';
@@ -83,6 +81,10 @@
       ? `<span class="bon-tag ${o.status === 'done' ? 'paid' : ''}">🎟️ Bon ${o.status === 'done' ? '· bezahlt ✓' : '· offen'}</span>`
       : `<span class="pay-tag">${icon('money')} ${esc(PAY_LABEL[o.payMethod] || o.payLabel)}</span>`;
     const advLabel = (isBon && o.status === 'ready') ? 'Bon einlösen ✓' : NEXT_LABEL[o.status];
+    const meta = [];
+    if (o.guestName) meta.push('👤 ' + esc(o.guestName));
+    if (o.pickupWhen === '10min') meta.push('⏱️ in ~10 Min');
+    const metaLine = meta.length ? `<div class="tk-meta">${meta.join('  ·  ')}</div>` : '';
     return `<div class="ticket ${TCLASS[o.status]} ${urg} ${unread ? 'has-unread' : ''}" ${isNew ? 'style="animation:rise .35s var(--ease)"' : ''}>
       <div class="t-top">
         <span class="pno">${esc(o.pickup)}</span>
@@ -92,6 +94,7 @@
         <img class="tk-sym" src="assets/img/${BELL.STATUS_SYM[o.status]}.svg?v=6" alt="" />
         <span class="status-pill s-${o.status}" style="font-size:11px;padding:3px 9px">${BELL.STATUS_SHORT[o.status]}</span>
       </div>
+      ${metaLine}
       <div class="items">
         ${o.items.map(it => `<div class="it"><b>${it.qty}×</b><span>${esc(it.name)}</span></div>`).join('')}
       </div>
@@ -123,7 +126,7 @@
   function renderDrawer() {
     const o = BELL.getOrder(drawerId);
     if (!o) { closeDrawer(); return; }
-    el('#drawer-pickup').textContent = o.pickup + ' · ' + o.standName;
+    el('#drawer-pickup').textContent = o.pickup + (o.guestName ? ' · ' + o.guestName : '') + ' · ' + o.standName;
     const log = (o.messages || []).map(m => {
       if (m.from === 'system') return `<div class="sys-msg">${esc(m.text)}<span class="tm">${BELL.clock(m.ts)}</span></div>`;
       return `<div class="bubble ${m.from === 'staff' ? 'me' : 'them'}">${esc(m.text)}<span class="tm">${m.from === 'staff' ? 'Crew' : 'Gast'} · ${BELL.clock(m.ts)}</span></div>`;
@@ -150,7 +153,8 @@
     const bon = BELL.getSettings().mode === 'bon';
     const pays = ['twint', 'applepay', 'googlepay', 'card', 'cash'];
     const pm = bon ? 'bon' : pays[Math.floor(Math.random() * pays.length)];
-    BELL.createOrder({ eventId: ev.id, standId: stand.id, standName: stand.name, items, subtotal: sub, total: sub, payMethod: pm, payLabel: PAY_LABEL[pm], source: 'demo' });
+    const names = ['', 'Lena', 'Tobias', 'Sina', 'Marco', ''];
+    BELL.createOrder({ eventId: ev.id, standId: stand.id, standName: stand.name, items, subtotal: sub, total: sub, payMethod: pm, payLabel: PAY_LABEL[pm], source: 'demo', guestName: names[Math.floor(Math.random() * names.length)] });
     toast('Walk-in-Bestellung erstellt', 'ok', 1500);
     buzz(20);
   }
