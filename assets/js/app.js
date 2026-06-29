@@ -10,6 +10,7 @@
   let activeOrderId = null;
   let currentView = 'start';
   let backTarget = 'start';
+  const lastIdxById = {}; // für Live-Status-Update-Erkennung
 
   const MINE = 'bellfl_mine_v1';
   const getMine = () => { try { return JSON.parse(localStorage.getItem(MINE)) || []; } catch (e) { return []; } };
@@ -278,6 +279,27 @@
     buzz(30);
   }
 
+  /* ---------- Visueller Bestellablauf (Journey) ---------- */
+  function flowHtml(o, idx) {
+    return `
+      <div class="card pad flow">
+        <div class="flow-head">
+          <h3>Bestellablauf</h3>
+          <span class="flow-live"><span class="lv-dot"></span>live</span>
+        </div>
+        <div class="flow-steps">
+          ${BELL.STATUS.map((st, i) => {
+            const state = i < idx ? 'done' : (i === idx ? 'cur' : 'todo');
+            return `<div class="flow-step ${state}">
+              <span class="fs-ico"><img src="assets/img/${SYM[st]}.svg?v=6" alt=""></span>
+              <span class="fs-body"><b>${BELL.STATUS_LABEL[st]}</b><span>${BELL.STATUS_GUEST_LINE[st]}</span></span>
+              <span class="fs-mark">${i < idx ? icon('check') : (i === idx ? '<span class="fs-pulse"></span>' : '')}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
   function renderOrder(id, view) {
     const o = BELL.getOrder(id);
     if (!o) { show('start'); return; }
@@ -285,6 +307,10 @@
     const idx = BELL.STATUS.indexOf(o.status);
     const isReady = o.status === 'ready';
     const isDone = o.status === 'done';
+
+    const prev = lastIdxById[o.id];
+    const justAdvanced = (typeof prev === 'number' && idx > prev);
+    lastIdxById[o.id] = idx;
 
     const showWait = !isReady && !isDone;
     const aheadActive = BELL.getOrders().filter(x => x.status !== 'done' && x.status !== 'ready' && x.createdAt < o.createdAt).length;
@@ -298,25 +324,24 @@
       ready: 'Komm zum ' + o.standName + ' und zeig deine Nummer!',
       done: 'Abgeschlossen – en Guete! 😋'
     }[o.status];
-    const dots = BELL.STATUS.map((st, i) => `<i class="${i < idx ? 'done' : (i === idx ? 'cur' : '')}"></i>`).join('');
 
     const itemsHtml = o.items.map(it =>
       `<div class="r-line"><span><span class="q">${it.qty}×</span> ${esc(it.name)}</span><span class="num">${BELL.chf(it.price * it.qty)}</span></div>`
     ).join('');
 
-    const chatLog = (o.messages || []).map(m =>
-      `<div class="bubble ${m.from === 'guest' ? 'me' : 'them'}">${esc(m.text)}<span class="tm">${m.from === 'guest' ? 'Du' : 'Bell-Crew'} · ${BELL.clock(m.ts)}</span></div>`
-    ).join('') || `<div class="t-muted center" style="font-size:var(--fs-sm);padding:8px">Noch keine Nachrichten. Schreib der Crew bei Sonderwünschen.</div>`;
+    const chatLog = (o.messages || []).map(m => {
+      if (m.from === 'system') return `<div class="sys-msg">${esc(m.text)}<span class="tm">${BELL.clock(m.ts)}</span></div>`;
+      return `<div class="bubble ${m.from === 'guest' ? 'me' : 'them'}">${esc(m.text)}<span class="tm">${m.from === 'guest' ? 'Du' : 'Bell-Crew'} · ${BELL.clock(m.ts)}</span></div>`;
+    }).join('') || `<div class="t-muted center" style="font-size:var(--fs-sm);padding:8px">Noch keine Nachrichten. Schreib der Crew bei Sonderwünschen.</div>`;
 
     const target = view === 'success' ? '#success-content' : '#track-content';
     el(target).innerHTML = `
       ${view === 'track' ? `<button class="btn btn-ghost btn-sm" data-nav="track" style="margin-bottom:var(--s-4)">${icon('arrowLeft')}Alle Bestellungen</button>` : ''}
 
       <div class="status-hero ${SH[o.status]}">
-        <div class="symwrap"><img src="assets/img/${SYM[o.status]}.svg?v=5" alt="" /></div>
+        <div class="symwrap"><img src="assets/img/${SYM[o.status]}.svg?v=6" alt="" /></div>
         <div class="bl">${BELL.STATUS_LABEL[o.status]}</div>
         <div class="sl">${esc(subt)}</div>
-        <div class="step-dots">${dots}</div>
       </div>
 
       <div class="pickup-card" style="margin-top:var(--s-4)">
@@ -327,6 +352,8 @@
           : `<div class="hint">${isDone ? 'Abgeschlossen – en Guete! 😋' : '🎉 Zeig diese Nummer am ' + esc(o.standName)}</div>`}
         ${isReady ? `<button class="btn btn-block btn-lg" data-act="order-received" data-id="${o.id}" style="margin-top:var(--s-4);background:#fff;color:var(--bell-red)">${icon('check')} Bestellung erhalten</button>` : ''}
       </div>
+
+      ${flowHtml(o, idx)}
 
       <div class="card" style="margin-top:var(--s-5);overflow:hidden">
         <div class="receipt">
@@ -365,6 +392,17 @@
       </div>`;
 
     const log = el('#chat-log-' + view); if (log) log.scrollTop = log.scrollHeight;
+
+    // Live-Update: Crew (oder Auto-Pilot) hat den Status vorangebracht
+    if (justAdvanced) {
+      const c = el(target);
+      const hero = c && c.querySelector('.status-hero');
+      if (hero) { hero.classList.add('just'); setTimeout(() => hero.classList.remove('just'), 900); }
+      const curStep = c && c.querySelector('.flow-step.cur');
+      if (curStep) { curStep.classList.add('just'); setTimeout(() => curStep.classList.remove('just'), 900); }
+      toast('Update vom Stand: ' + BELL.STATUS_LABEL[o.status], 'ok', 1900);
+      buzz(26);
+    }
   }
 
   function renderTrack() {
@@ -424,15 +462,20 @@
     }
   }
 
+  // Auto-Pilot: bringt Bestellungen automatisch voran – ABER nur, wenn KEINE Crew aktiv ist.
+  // Sobald die Crew-Ansicht offen ist, steuert ausschliesslich die Crew (echtes Zusammenspiel).
   const AUTO = { received: 8, prep: 12, grill: 16, almost: 10 };
   function autoTick() {
-    let changed = false;
-    BELL.getOrders().forEach(o => {
-      if (o.source !== 'guest' || o.status === 'ready' || o.status === 'done') return;
-      const t = (o.statusTimes && o.statusTimes[o.status]) || o.createdAt;
-      if ((Date.now() - t) / 1000 >= (AUTO[o.status] || 12)) { BELL.advanceStatus(o.id); changed = true; }
-    });
-    if (!changed) refreshLive();
+    if (!BELL.isCrewActive()) {
+      let changed = false;
+      BELL.getOrders().forEach(o => {
+        if (o.source !== 'guest' || o.status === 'ready' || o.status === 'done') return;
+        const t = (o.statusTimes && o.statusTimes[o.status]) || o.createdAt;
+        if ((Date.now() - t) / 1000 >= (AUTO[o.status] || 12)) { BELL.advanceStatus(o.id); changed = true; }
+      });
+      if (changed) return;
+    }
+    refreshLive();
   }
 
   document.addEventListener('click', (e) => {
