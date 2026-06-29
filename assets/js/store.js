@@ -11,7 +11,8 @@
     orders:   'bellfl_orders_v1',
     settings: 'bellfl_settings_v1',
     seq:      'bellfl_seq_v1',
-    seeded:   'bellfl_seeded_v1'
+    seeded:   'bellfl_seeded_v1',
+    crewHb:   'bellfl_crew_hb'
   };
 
   /* ---------- Status flow ---------- */
@@ -27,6 +28,27 @@
   const STATUS_SHORT = {
     received: 'Eingegangen', prep: 'In Vorbereitung', grill: 'Auf dem Grill',
     almost: 'Fast fertig', ready: 'Abholbereit', done: 'Abgeschlossen'
+  };
+  // Symbol je Phase (gemeinsame Bildsprache Gast + Crew)
+  const STATUS_SYM = {
+    received: 'sym-received', prep: 'sym-prep', grill: 'sym-prep',
+    almost: 'sym-prep', ready: 'sym-pickup', done: 'sym-received'
+  };
+  // Kurze freundliche Zeile je Phase (Gast-Journey)
+  const STATUS_GUEST_LINE = {
+    received: 'Bei der Crew eingegangen',
+    prep:     'Zutaten werden vorbereitet',
+    grill:    'Frisch auf dem Grill',
+    almost:   'Wird angerichtet',
+    ready:    'Bereit zur Abholung',
+    done:     'Abgeschlossen – en Guete!'
+  };
+  // Automatische Live-Meldung an den Gast bei Vorwärts-Statuswechsel (indirekte Kommunikation)
+  const STATUS_SYS = {
+    prep:   '👨‍🍳 Deine Bestellung wird zubereitet.',
+    grill:  '🔥 Jetzt frisch auf dem Grill!',
+    almost: '⏳ Fast fertig – gleich abholbereit.',
+    ready:  '✅ Abholbereit! Komm zum Stand und zeig deine Abholnummer.'
   };
 
   /* ---------- Product artwork (SVG fallback, falls Foto nicht lädt) ---------- */
@@ -131,7 +153,15 @@
     }
   };
 
-  /* ---------- Storage helpers ---------- */
+  /* ---------- Sync layer ---------- */
+  const listeners = [];
+  function onChange(fn) { listeners.push(fn); }
+  function emit() { listeners.forEach(fn => { try { fn(); } catch (e) {} }); }
+
+  // BroadcastChannel = sofortiger, zuverlässiger Sync zwischen Tabs im selben Browser
+  let bc = null;
+  try { bc = new BroadcastChannel('bellfl'); bc.onmessage = function () { emit(); }; } catch (e) { bc = null; }
+
   function read(key, fallback) {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
     catch (e) { return fallback; }
@@ -139,15 +169,21 @@
   function write(key, val) {
     try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
     try { localStorage.setItem('bellfl_ping', String(Date.now())); } catch (e) {}
+    try { if (bc) bc.postMessage(1); } catch (e) {}
     emit();
   }
-
-  const listeners = [];
-  function onChange(fn) { listeners.push(fn); }
-  function emit() { listeners.forEach(fn => { try { fn(); } catch (e) {} }); }
   global.addEventListener('storage', (e) => {
     if (e.key && (e.key.indexOf('bellfl_') === 0)) emit();
   });
+
+  /* ---------- Crew-Heartbeat (Crew steuert, wenn aktiv) ---------- */
+  // Crew-Tab meldet sich regelmässig. Solange aktiv, pausiert der Gast-Auto-Pilot,
+  // damit Statuswechsel ausschliesslich von der Crew kommen = echtes Zusammenspiel.
+  function setCrewActive() { try { localStorage.setItem(KEYS.crewHb, String(Date.now())); } catch (e) {} }
+  function isCrewActive() {
+    try { return (Date.now() - (parseInt(localStorage.getItem(KEYS.crewHb), 10) || 0)) < 15000; }
+    catch (e) { return false; }
+  }
 
   /* ---------- Settings ---------- */
   function getSettings() {
@@ -208,9 +244,16 @@
     const list = getOrders();
     const o = list.find(x => x.id === id);
     if (!o) return null;
+    const oldI = STATUS.indexOf(o.status), newI = STATUS.indexOf(status);
     o.status = status;
     o.statusTimes = o.statusTimes || {};
     if (!o.statusTimes[status]) o.statusTimes[status] = Date.now();
+    // Vorwärts-Wechsel → automatische Live-Meldung an den Gast (indirekte Kommunikation)
+    if (newI > oldI && STATUS_SYS[status]) {
+      o.messages = o.messages || [];
+      o.messages.push({ from: 'system', text: STATUS_SYS[status], ts: Date.now(), read: true });
+      o.unreadGuest = (o.unreadGuest || 0) + 1;
+    }
     saveOrders(list);
     return o;
   }
@@ -240,7 +283,7 @@
     if (side === 'staff') o.unreadStaff = 0; else o.unreadGuest = 0;
     (o.messages || []).forEach(m => {
       if (side === 'staff' && m.from === 'guest') m.read = true;
-      if (side === 'guest' && m.from === 'staff') m.read = true;
+      if (side === 'guest' && m.from !== 'guest') m.read = true;
     });
     saveOrders(list);
   }
@@ -307,12 +350,13 @@
 
   /* ---------- Expose ---------- */
   global.BELL = {
-    KEYS, STATUS, STATUS_LABEL, STATUS_SHORT,
+    KEYS, STATUS, STATUS_LABEL, STATUS_SHORT, STATUS_SYM, STATUS_GUEST_LINE,
     PRODUCTS, CATEGORIES, EVENTS, QUICK_MSGS,
     art, IMAGES, HERO,
     getSettings, setSettings, currentEvent, eventProducts,
     getOrders, getOrder, createOrder, setStatus, advanceStatus,
     addMessage, markRead, resetDemo, seed,
+    setCrewActive, isCrewActive,
     onChange, chf, timeAgo, clock, minsAgo
   };
 
