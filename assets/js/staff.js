@@ -13,14 +13,13 @@
   ];
   const NEXT_LABEL = { received: 'Annehmen', prep: 'Auf den Grill 🔥', grill: 'Fast fertig', almost: 'Abholbereit', ready: 'Abschliessen' };
   const TCLASS = { received: '', prep: 't-prep', grill: 't-grill', almost: 't-almost', ready: 't-ready', done: '' };
-  const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar' };
+  const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar', bon: 'Bell Bon' };
   const STAFF_QUICK = ['Alles klar 👍', 'In ~5 Min bereit', 'Ohne Zwiebeln – notiert', 'Bitte vorne abholen', 'Gerne, kannst du ergänzen'];
 
   const seen = new Set();
   let drawerId = null;
 
-  // Crew-Heartbeat: solange diese Ansicht offen ist, steuert die Crew den Status
-  // (der Gast-Auto-Pilot pausiert) → echtes Zusammenspiel Gast ↔ Crew.
+  // Crew-Heartbeat: solange diese Ansicht offen ist, steuert die Crew den Status.
   BELL.setCrewActive();
   setInterval(BELL.setCrewActive, 5000);
   ['focus', 'visibilitychange', 'click', 'keydown'].forEach(ev =>
@@ -29,8 +28,18 @@
   function isToday(ts) { const d = new Date(ts), n = new Date(); return d.toDateString() === n.toDateString(); }
   function lastGuestMsg(o) { const g = (o.messages || []).filter(m => m.from === 'guest'); return g.length ? g[g.length - 1] : null; }
 
+  /* ---------- Betriebsmodus: Digitale Zahlung ⇄ Bon-System ---------- */
+  function updateModeBtn() {
+    const b = el('#btn-mode'); if (!b) return;
+    const bon = BELL.getSettings().mode === 'bon';
+    b.innerHTML = '<span class="mode-dot"></span>' + (bon ? 'Modus: Bon-System' : 'Modus: Zahlung');
+    b.classList.toggle('btn-primary', bon);
+    b.classList.toggle('btn-soft', !bon);
+  }
+
   function render() {
     BELL.setCrewActive();
+    updateModeBtn();
     const ev = BELL.currentEvent();
     el('#staff-event').textContent = '📍 ' + ev.name;
     const orders = BELL.getOrders();
@@ -62,6 +71,7 @@
     const note = lastGuestMsg(o);
     const isNew = !seen.has(o.id);
     const unread = o.unreadStaff > 0;
+    const isBon = o.payMethod === 'bon';
     const age = BELL.minsAgo(o.createdAt);
     let urg = '', badge = '';
     if (o.status !== 'done' && o.status !== 'ready') {
@@ -69,6 +79,10 @@
       else if (age >= 4) { urg = 'urge-warn'; badge = '<span class="wait-badge warn">' + age + ' Min</span>'; }
       else { badge = '<span class="wait-badge ok">' + age + ' Min</span>'; }
     }
+    const payTag = isBon
+      ? `<span class="bon-tag ${o.status === 'done' ? 'paid' : ''}">🎟️ Bon ${o.status === 'done' ? '· bezahlt ✓' : '· offen'}</span>`
+      : `<span class="pay-tag">${icon('money')} ${esc(PAY_LABEL[o.payMethod] || o.payLabel)}</span>`;
+    const advLabel = (isBon && o.status === 'ready') ? 'Bon einlösen ✓' : NEXT_LABEL[o.status];
     return `<div class="ticket ${TCLASS[o.status]} ${urg} ${unread ? 'has-unread' : ''}" ${isNew ? 'style="animation:rise .35s var(--ease)"' : ''}>
       <div class="t-top">
         <span class="pno">${esc(o.pickup)}</span>
@@ -83,12 +97,12 @@
       </div>
       ${note ? `<div class="note">${icon('chat')}<span>${esc(note.text)}</span></div>` : ''}
       <div class="t-foot">
-        <span class="pay-tag">${icon('money')} ${esc(PAY_LABEL[o.payMethod] || o.payLabel)}</span>
+        ${payTag}
         <button class="btn btn-ghost btn-sm" data-act="chat" data-id="${o.id}" aria-label="Chat">
           ${icon('chat')}${unread ? `<span style="background:var(--bell-red);color:#fff;border-radius:999px;padding:0 6px;font-size:11px">${o.unreadStaff}</span>` : ''}
         </button>
         ${o.status !== 'received' && o.status !== 'done' ? `<button class="btn btn-ghost btn-sm" data-act="revert" data-id="${o.id}" title="Schritt zurück">↶</button>` : ''}
-        ${o.status !== 'done' ? `<button class="btn btn-primary btn-sm adv" data-act="advance" data-id="${o.id}">${NEXT_LABEL[o.status]} ${icon('arrowRight')}</button>` : `<span class="adv pill" style="font-size:11px">${icon('check')} Erledigt</span>`}
+        ${o.status !== 'done' ? `<button class="btn btn-primary btn-sm adv" data-act="advance" data-id="${o.id}">${advLabel} ${icon('arrowRight')}</button>` : `<span class="adv pill" style="font-size:11px">${icon('check')} Erledigt</span>`}
       </div>
     </div>`;
   }
@@ -133,8 +147,9 @@
     const pool = list.slice().sort(() => Math.random() - 0.5).slice(0, n);
     const items = pool.map(p => ({ id: p.id, name: p.name, price: p.price, qty: 1 + Math.floor(Math.random() * 2) }));
     const sub = items.reduce((s, x) => s + x.price * x.qty, 0);
+    const bon = BELL.getSettings().mode === 'bon';
     const pays = ['twint', 'applepay', 'googlepay', 'card', 'cash'];
-    const pm = pays[Math.floor(Math.random() * pays.length)];
+    const pm = bon ? 'bon' : pays[Math.floor(Math.random() * pays.length)];
     BELL.createOrder({ eventId: ev.id, standId: stand.id, standName: stand.name, items, subtotal: sub, total: sub, payMethod: pm, payLabel: PAY_LABEL[pm], source: 'demo' });
     toast('Walk-in-Bestellung erstellt', 'ok', 1500);
     buzz(20);
@@ -148,7 +163,8 @@
       if (a.dataset.act === 'advance') {
         const o = BELL.getOrder(id);
         const updated = BELL.advanceStatus(id);
-        toast(o.pickup + ' → ' + BELL.STATUS_SHORT[updated.status], 'ok', 1500); buzz(14);
+        const redeemed = (o.payMethod === 'bon' && updated.status === 'done');
+        toast(o.pickup + (redeemed ? ' · Bon eingelöst ✓' : ' → ' + BELL.STATUS_SHORT[updated.status]), 'ok', 1500); buzz(14);
       } else if (a.dataset.act === 'revert') {
         const o = BELL.getOrder(id); const i = BELL.STATUS.indexOf(o.status);
         if (i > 0) { BELL.setStatus(id, BELL.STATUS[i - 1]); }
@@ -170,7 +186,17 @@
   el('#btn-demo-order').innerHTML = icon('plus') + 'Walk-in (Demo)';
   el('#btn-demo-order').addEventListener('click', makeDemoOrder);
 
+  const mb = el('#btn-mode');
+  if (mb) mb.addEventListener('click', () => {
+    const m = BELL.getSettings().mode === 'bon' ? 'payment' : 'bon';
+    BELL.setSettings({ mode: m });
+    updateModeBtn();
+    toast('Betriebsmodus: ' + (m === 'bon' ? '🎟️ Bon-System' : '💳 Digitale Zahlung'), 'ok', 2000);
+    buzz(16);
+  });
+  updateModeBtn();
+
   BELL.onChange(render);
   render();
-  setInterval(render, 8000); // refresh Wartezeit-Ampel + "vor X Min"
+  setInterval(render, 8000);
 })();
