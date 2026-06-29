@@ -19,10 +19,18 @@
   const seen = new Set();
   let drawerId = null;
 
+  // Crew-Heartbeat: solange diese Ansicht offen ist, steuert die Crew den Status
+  // (der Gast-Auto-Pilot pausiert) → echtes Zusammenspiel Gast ↔ Crew.
+  BELL.setCrewActive();
+  setInterval(BELL.setCrewActive, 5000);
+  ['focus', 'visibilitychange', 'click', 'keydown'].forEach(ev =>
+    window.addEventListener(ev, () => { if (!document.hidden) BELL.setCrewActive(); }, { passive: true }));
+
   function isToday(ts) { const d = new Date(ts), n = new Date(); return d.toDateString() === n.toDateString(); }
   function lastGuestMsg(o) { const g = (o.messages || []).filter(m => m.from === 'guest'); return g.length ? g[g.length - 1] : null; }
 
   function render() {
+    BELL.setCrewActive();
     const ev = BELL.currentEvent();
     el('#staff-event').textContent = '📍 ' + ev.name;
     const orders = BELL.getOrders();
@@ -66,7 +74,10 @@
         <span class="pno">${esc(o.pickup)}</span>
         <span class="ago">${BELL.timeAgo(o.createdAt)}${badge}</span>
       </div>
-      <span class="status-pill s-${o.status}" style="font-size:11px;padding:3px 9px">${BELL.STATUS_SHORT[o.status]}</span>
+      <div class="t-stage">
+        <img class="tk-sym" src="assets/img/${BELL.STATUS_SYM[o.status]}.svg?v=6" alt="" />
+        <span class="status-pill s-${o.status}" style="font-size:11px;padding:3px 9px">${BELL.STATUS_SHORT[o.status]}</span>
+      </div>
       <div class="items">
         ${o.items.map(it => `<div class="it"><b>${it.qty}×</b><span>${esc(it.name)}</span></div>`).join('')}
       </div>
@@ -99,9 +110,10 @@
     const o = BELL.getOrder(drawerId);
     if (!o) { closeDrawer(); return; }
     el('#drawer-pickup').textContent = o.pickup + ' · ' + o.standName;
-    const log = (o.messages || []).map(m =>
-      `<div class="bubble ${m.from === 'staff' ? 'me' : 'them'}">${esc(m.text)}<span class="tm">${m.from === 'staff' ? 'Crew' : 'Gast'} · ${BELL.clock(m.ts)}</span></div>`
-    ).join('') || `<div class="t-muted center" style="font-size:var(--fs-sm);padding:var(--s-5)">Noch keine Nachrichten zu dieser Bestellung.</div>`;
+    const log = (o.messages || []).map(m => {
+      if (m.from === 'system') return `<div class="sys-msg">${esc(m.text)}<span class="tm">${BELL.clock(m.ts)}</span></div>`;
+      return `<div class="bubble ${m.from === 'staff' ? 'me' : 'them'}">${esc(m.text)}<span class="tm">${m.from === 'staff' ? 'Crew' : 'Gast'} · ${BELL.clock(m.ts)}</span></div>`;
+    }).join('') || `<div class="t-muted center" style="font-size:var(--fs-sm);padding:var(--s-5)">Noch keine Nachrichten zu dieser Bestellung.</div>`;
     el('#drawer-body').innerHTML = `<div class="chat-log" style="max-height:none">${log}</div>`;
     el('#staff-quick').innerHTML = STAFF_QUICK.map(q => `<button class="qm" data-staffquick="${esc(q)}">${esc(q)}</button>`).join('');
     const b = el('#drawer-body .chat-log'); if (b) b.scrollTop = b.scrollHeight;
@@ -129,6 +141,7 @@
   }
 
   document.addEventListener('click', (e) => {
+    BELL.setCrewActive();
     const a = e.target.closest('[data-act]');
     if (a) {
       const id = a.dataset.id;
