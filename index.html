@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#E2001A" />
+  <meta name="description" content="Bell FastLane – Vorbestellen, bezahlen, abholen. Interne Demo für Bell Grill & Event." />
+  <title>Bell FastLane · Vorbestellen & Abholen</title>
+  <link rel="icon" href="assets/img/favicon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="assets/css/bell.css" />
+</head>
+<body>
+
+  <!-- ============ APP BAR ============ -->
+  <header class="appbar" id="appbar">
+    <div class="container inner">
+      <a class="bell-logo" href="index.html" aria-label="Bell FastLane Start">
+        <span class="bell-mark sm">Bell</span>
+        <span class="sub">Fast<b>Lane</b></span>
+      </a>
+      <span class="spacer"></span>
+      <span class="role-tag" id="hdr-context">Gast</span>
+      <span class="demo-flag"><span class="dot"></span>DEMO</span>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- ============ START ============ -->
+    <section id="view-start" class="view">
+      <div class="hero">
+        <div class="hero-bg" id="hero-bg"></div>
+        <div class="hero-scrim"></div>
+        <div class="container inner">
+          <span class="kicker" id="hero-kicker">🔥 Bell Grill &amp; Event</span>
+          <h1>Vorbestellen.<br>Bezahlen. Abholen.</h1>
+          <p class="lead">Scanne, bestelle und überspringe die Schlange. Deine Bestellung wird frisch am Bell-Stand gegrillt.</p>
+          <div class="loc">
+            <span class="name" id="hero-event">Fussballmatch</span>
+            <span class="meta" id="hero-stand">📍 Bell Grillstand · St. Jakob-Park, Basel</span>
+          </div>
+          <div class="cta">
+            <button class="btn btn-primary btn-lg" id="cta-order">Jetzt bestellen</button>
+            <button class="btn btn-ghost btn-lg" id="cta-track">Meine Bestellung verfolgen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <!-- How it works -->
+        <div class="sec-head"><h2>So funktioniert's</h2></div>
+        <div class="steps">
+          <div class="step"><div class="n">1</div><div><h4>QR-Code scannen</h4><p>Am Bell-Stand oder in der Warteschlange – sofort startklar, ohne App-Installation.</p></div></div>
+          <div class="step"><div class="n">2</div><div><h4>Produkte wählen</h4><p>Menü antippen, Menge festlegen, in den Warenkorb. Schnell und übersichtlich.</p></div></div>
+          <div class="step"><div class="n">3</div><div><h4>Bequem bezahlen</h4><p>TWINT, Apple Pay, Google Pay oder Karte – in Sekunden (Demo).</p></div></div>
+          <div class="step"><div class="n">4</div><div><h4>Abholnummer erhalten</h4><p>Live-Status verfolgen und bei der Anzeige der Nummer abholen.</p></div></div>
+        </div>
+
+        <!-- USP -->
+        <div class="usp">
+          <span class="t-eyebrow" style="color:var(--bell-ember-soft)">Der USP</span>
+          <h2>Warum Bell FastLane?</h2>
+          <p class="sub">Weniger Schlange, schnellerer Service und mehr Umsatz pro Stunde – ein modernes Erlebnis für Gäste und Crew.</p>
+          <div class="kpi-grid">
+            <div class="kpi"><div class="big">−40%</div><div class="cap">Wartezeit in der Schlange</div></div>
+            <div class="kpi"><div class="big">+25%</div><div class="cap">Bestellungen pro Stunde</div></div>
+            <div class="kpi"><div class="big">~0</div><div class="cap">Bestellfehler durch klare Tickets</div></div>
+            <div class="kpi"><div class="big">100%</div><div class="cap">Digitale Auswertung pro Event</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ STAND SELECT ============ -->
+    <section id="view-stand" class="view hide">
+      <div class="container" style="padding-top:var(--s-5)">
+        <button class="btn btn-ghost btn-sm" data-nav="start" style="margin-bottom:var(--s-4)"></button>
+        <div class="sec-head"><h2 id="stand-title">Bell-Stand wählen</h2></div>
+        <p class="t-muted" style="margin-top:-12px;margin-bottom:var(--s-4)" id="stand-sub">Wo möchtest du abholen?</p>
+        <div class="stack" id="stand-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ MENU ============ -->
+    <section id="view-menu" class="view hide">
+      <div class="container">
+        <div class="row between" style="padding-top:var(--s-4)">
+          <div>
+            <div class="t-eyebrow" id="menu-event">Fussballmatch</div>
+            <div class="row" style="gap:6px;margin-top:2px">
+              <strong id="menu-stand" style="font-size:var(--fs-md)">Bell Grillstand</strong>
+            </div>
+          </div>
+          <button class="btn btn-soft btn-sm" data-nav="stand">Stand wechseln</button>
+        </div>
+
+        <div class="cat-bar">
+          <div class="cat-scroll" id="cat-scroll"></div>
+        </div>
+
+        <div id="menu" style="padding-bottom:120px"></div>
+      </div>
+    </section>
+
+    <!-- ============ SUCCESS / ACTIVE ORDER ============ -->
+    <section id="view-success" class="view hide">
+      <div class="container" id="success-content" style="padding:var(--s-5) 0 140px"></div>
+    </section>
+
+    <!-- ============ TRACK ============ -->
+    <section id="view-track" class="view hide">
+      <div class="container" style="padding:var(--s-5) 0 140px" id="track-content"></div>
+    </section>
+
+  </main>
+
+  <!-- ============ STICKY CART BAR ============ -->
+  <div class="cartbar" id="cartbar">
+    <div class="inner">
+      <span class="count" id="cart-count">0</span>
+      <span class="lbl">Warenkorb</span>
+      <span class="spacer"></span>
+      <span class="sum" id="cart-sum">CHF 0.00</span>
+      <button class="go" id="cart-open">Ansehen</button>
+    </div>
+  </div>
+
+  <!-- ============ OVERLAYS ============ -->
+  <div class="scrim" id="scrim"></div>
+
+  <!-- Cart sheet -->
+  <div class="sheet" id="sheet-cart" role="dialog" aria-modal="true" aria-label="Warenkorb">
+    <div class="grip"></div>
+    <div class="sheet-head">
+      <h3>Dein Warenkorb</h3>
+      <button class="icon-btn" data-close-sheet aria-label="Schliessen"></button>
+    </div>
+    <div class="sheet-body" id="cart-body"></div>
+    <div class="sheet-foot" id="cart-foot"></div>
+  </div>
+
+  <!-- Payment sheet -->
+  <div class="sheet" id="sheet-pay" role="dialog" aria-modal="true" aria-label="Zahlung">
+    <div class="grip"></div>
+    <div class="sheet-head">
+      <h3 id="pay-title">Zahlung</h3>
+      <button class="icon-btn" data-close-sheet aria-label="Schliessen"></button>
+    </div>
+    <div class="sheet-body" id="pay-body"></div>
+    <div class="sheet-foot" id="pay-foot"></div>
+  </div>
+
+  <footer class="foot no-print">
+    <div>Bell FastLane · <strong>Interne Demo / Prototyp</strong> · Es erfolgt keine echte Zahlung, es werden keine echten Kundendaten gespeichert.</div>
+    <div class="role-switch">
+      <a href="index.html">🛒 Gast</a>
+      <a href="staff.html">👨‍🍳 Crew / Kasse</a>
+      <a href="admin.html">📊 Admin</a>
+    </div>
+    <div style="margin-top:10px">© 2026 Demo für Bell Food Group · nicht offiziell · zu Präsentationszwecken</div>
+  </footer>
+
+  <div class="fx-glow" id="fx-glow" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
