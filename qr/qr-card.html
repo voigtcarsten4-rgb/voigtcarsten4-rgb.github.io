@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#E2001A" />
+  <title>Bell FastLane · QR-Karte</title>
+  <link rel="icon" href="../assets/img/favicon.svg" />
+  <link rel="stylesheet" href="../assets/css/bell.css" />
+  <style>
+    body { background: var(--bg-2); display: flex; flex-direction: column; align-items: center; padding: var(--s-6) var(--s-4); min-height: 100vh; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: var(--s-5); }
+    .qr-card {
+      width: 380px; max-width: 94vw; background: #fff; border-radius: 26px; overflow: hidden;
+      box-shadow: var(--sh-3); border: 1px solid var(--line);
+    }
+    .qr-card .top {
+      background: radial-gradient(120% 90% at 80% -10%, rgba(255,122,26,.5), transparent 55%),
+                  linear-gradient(160deg, #2a0a08 0%, #7E0010 40%, var(--bell-red) 100%);
+      color: #fff; padding: 28px 26px 22px; text-align: center;
+    }
+    .qr-card .top .bell-mark { margin: 0 auto 12px; }
+    .qr-card .top h1 { font-size: 26px; }
+    .qr-card .top p { opacity: .92; margin-top: 6px; font-size: 14px; }
+    .qr-card .qrwrap { padding: 26px; text-align: center; }
+    .qr-card .qrwrap .frame { width: 240px; height: 240px; margin: 0 auto; padding: 12px; border: 3px solid var(--ink); border-radius: 20px; }
+    .qr-card .qrwrap .frame svg { width: 100%; height: 100%; }
+    .qr-card .scan { font-weight: 900; font-size: 22px; margin-top: 16px; letter-spacing: -.02em; }
+    .qr-card .ev { color: var(--bell-red); font-weight: 800; margin-top: 4px; }
+    .qr-card .steps3 { display: flex; justify-content: center; gap: 8px; margin: 18px 0 6px; flex-wrap: wrap; }
+    .qr-card .steps3 span { font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--bg-2); padding: 7px 12px; border-radius: 999px; }
+    .qr-card .url { font-size: 11px; color: var(--ink-3); word-break: break-all; padding: 0 26px 10px; text-align: center; }
+    .qr-card .foot { background: var(--ink); color: #fff; text-align: center; font-size: 11px; padding: 12px; }
+    .qr-card .foot b { color: var(--bell-ember-soft); }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .qr-card { box-shadow: none; border: 1px solid #ccc; }
+      @page { margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Karte drucken</button>
+    <a class="btn btn-ghost btn-sm" href="../admin.html">← Zurück zum Admin</a>
+  </div>
+
+  <div class="qr-card">
+    <div class="top">
+      <span class="bell-mark lg">Bell</span>
+      <h1>Vorbestellen &amp; Abholen</h1>
+      <p>Keine Schlange. Frisch vom Grill. In Sekunden bestellt.</p>
+    </div>
+    <div class="qrwrap">
+      <div class="frame" id="qr"></div>
+      <div class="scan">📲 Scannen &amp; bestellen</div>
+      <div class="ev" id="ev-name">—</div>
+      <div class="steps3">
+        <span>1 · Scannen</span><span>2 · Bestellen</span><span>3 · Abholnummer</span>
+      </div>
+    </div>
+    <div class="url" id="url"></div>
+    <div class="foot">Bell FastLane · <b>Interne Demo / Prototyp</b> · keine echte Zahlung</div>
+  </div>
+
+  <script src="../assets/js/store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script>
+    (function () {
+      var url = new URL('../index.html', location.href).href;
+      try {
+        var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+        document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
+        var svg = document.querySelector('#qr svg'); if (svg) { svg.style.width = '100%'; svg.style.height = '100%'; }
+      } catch (e) { document.getElementById('qr').textContent = 'QR'; }
+      document.getElementById('url').textContent = url;
+      try { document.getElementById('ev-name').textContent = '📍 ' + BELL.currentEvent().name + ' · ' + BELL.currentEvent().venue; } catch (e) {}
+    })();
+  </script>
+</body>
+</html>
