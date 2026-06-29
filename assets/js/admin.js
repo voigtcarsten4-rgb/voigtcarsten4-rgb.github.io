@@ -11,7 +11,6 @@
 
   function isToday(ts) { const d = new Date(ts), n = new Date(); return d.toDateString() === n.toDateString(); }
 
-  /* ---------- Betriebsmodus ---------- */
   function updateModeBtn() {
     const b = el('#btn-mode'); if (!b) return;
     const bon = BELL.getSettings().mode === 'bon';
@@ -20,7 +19,6 @@
     b.classList.toggle('btn-soft', !bon);
   }
 
-  /* ---------- Metrics ---------- */
   function renderMetrics() {
     const orders = BELL.getOrders();
     const today = orders.filter(o => isToday(o.createdAt));
@@ -44,7 +42,6 @@
       </div>`).join('');
   }
 
-  /* ---------- Top products ---------- */
   function renderTop() {
     const orders = BELL.getOrders();
     const agg = {};
@@ -62,7 +59,6 @@
       </div>`).join('') : `<p class="t-muted">Noch keine Verkäufe.</p>`);
   }
 
-  /* ---------- Status overview ---------- */
   function renderStatus() {
     const orders = BELL.getOrders();
     const counts = {}; BELL.STATUS.forEach(s => counts[s] = 0);
@@ -74,7 +70,20 @@
       </div>`).join('');
   }
 
-  /* ---------- Event modes ---------- */
+  /* ---------- Warum Bell FastLane zur Bell-Welt passt ---------- */
+  function renderWhy() {
+    const elw = el('#panel-why'); if (!elw) return;
+    const args = [
+      ['⚡', 'Weniger Warteschlange', 'Mehr Bestellungen und Umsatz pro Stunde – Gäste bestellen schon in der Schlange.'],
+      ['🔥', 'Bell-Qualität sichtbar', 'Frisch vom Grill, emotional inszeniert – die Bell-Welt digital erlebbar.'],
+      ['📲', 'Kein App-Zwang', 'QR scannen, sofort bestellen – ohne Installation, ohne Login.'],
+      ['💬', 'Direkte Kommunikation', 'Gast und Grillteam sprechen in Echtzeit – Sonderwünsche inklusive.'],
+      ['📊', 'Volle Auswertung', 'Jedes Event digital messbar: Umsatz, Topseller, Durchlauf.']
+    ];
+    elw.innerHTML = `<h3>Warum Bell FastLane zur Bell-Welt passt</h3>` +
+      args.map(a => `<div class="why-row"><span class="why-ic">${a[0]}</span><div class="why-tx"><b>${a[1]}</b><span>${esc(a[2])}</span></div></div>`).join('');
+  }
+
   function renderEvents() {
     const cur = BELL.getSettings().eventId;
     el('#event-seg').innerHTML = Object.values(BELL.EVENTS).map(ev =>
@@ -89,12 +98,11 @@
         <div style="margin-top:10px">${ev.stands.map(s => `<div class="row" style="gap:8px;padding:4px 0;font-size:var(--fs-sm)">${icon('pin')}<span><strong>${esc(s.name)}</strong> · <span class="t-muted">${esc(s.meta)}</span></span></div>`).join('')}</div>
         <div class="row between" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
           <span style="font-weight:700;font-size:var(--fs-sm)">Betriebsmodus</span>
-          <span class="pill ${bon ? '' : ''}" style="font-weight:800">${bon ? '🎟️ Bon-System' : '💳 Digitale Zahlung'}</span>
+          <span class="pill" style="font-weight:800">${bon ? '🎟️ Bon-System' : '💳 Digitale Zahlung'}</span>
         </div>
       </div>`;
   }
 
-  /* ---------- Recent orders ---------- */
   function renderRecent() {
     const orders = BELL.getOrders().slice().sort((a, b) => b.createdAt - a.createdAt);
     el('#orders-count').textContent = orders.length + ' Bestellungen total';
@@ -104,7 +112,7 @@
           <strong style="color:var(--bell-red);min-width:48px">${esc(o.pickup)}</strong>
           <span>
             <span style="display:block;font-weight:600;font-size:var(--fs-sm)">${o.items.reduce((s, i) => s + i.qty, 0)} Artikel · ${esc(o.items.map(i => i.qty + '× ' + i.name).join(', '))}</span>
-            <span class="t-muted" style="font-size:var(--fs-xs)">${(o.payMethod === 'bon' ? '🎟️ ' : '') + esc(PAY_LABEL[o.payMethod] || o.payLabel)} · ${BELL.timeAgo(o.createdAt)}${o.source === 'demo' ? ' · Walk-in' : ''}</span>
+            <span class="t-muted" style="font-size:var(--fs-xs)">${(o.guestName ? '👤 ' + esc(o.guestName) + ' · ' : '') + (o.payMethod === 'bon' ? '🎟️ ' : '') + esc(PAY_LABEL[o.payMethod] || o.payLabel)} · ${BELL.timeAgo(o.createdAt)}${o.source === 'demo' ? ' · Walk-in' : ''}</span>
           </span>
         </span>
         <span class="row" style="gap:var(--s-3)">
@@ -114,7 +122,6 @@
       </div>`).join('') || '<p class="t-muted">Keine Bestellungen.</p>';
   }
 
-  /* ---------- QR ---------- */
   function renderQR() {
     const url = new URL('index.html', location.href).href;
     try {
@@ -122,11 +129,10 @@
       el('#qr-target').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 4, scalable: true });
       const svg = el('#qr-target svg'); if (svg) { svg.style.width = '100%'; svg.style.height = '100%'; }
     } catch (e) { el('#qr-target').textContent = 'QR'; }
-    el('#qr-url').textContent = url;
-    el('#qr-open').href = url;
+    if (el('#qr-url')) el('#qr-url').textContent = url.replace(/^https?:\/\//, '');
+    if (el('#qr-open')) el('#qr-open').href = url;
   }
 
-  /* ---------- Count-up animation for KPIs ---------- */
   function animateCounts() {
     if (!window.gsap) return;
     els('#metrics .v').forEach(elm => {
@@ -139,14 +145,12 @@
     });
   }
 
-  /* ---------- Full render ---------- */
   function render() {
     updateModeBtn();
-    renderMetrics(); renderTop(); renderStatus(); renderEvents(); renderRecent();
+    renderMetrics(); renderTop(); renderStatus(); renderEvents(); renderWhy(); renderRecent();
     if (!counted) { counted = true; animateCounts(); }
   }
 
-  /* ---------- Demo order (for presentation mode) ---------- */
   function makeDemoOrder() {
     const ev = BELL.currentEvent();
     const list = BELL.eventProducts();
@@ -158,9 +162,10 @@
     const bon = BELL.getSettings().mode === 'bon';
     const pays = ['twint', 'applepay', 'googlepay', 'card', 'cash'];
     const pm = bon ? 'bon' : pays[Math.floor(Math.random() * pays.length)];
+    const names = ['', 'Lena', 'Tobias', 'Sina', 'Marco', ''];
     let all = BELL.getOrders();
     if (all.length > 40) { const done = all.filter(o => o.status === 'done').sort((a, b) => a.createdAt - b.createdAt); if (done[0]) { all = all.filter(o => o.id !== done[0].id); localStorage.setItem(BELL.KEYS.orders, JSON.stringify(all)); } }
-    BELL.createOrder({ eventId: ev.id, standId: stand.id, standName: stand.name, items, subtotal: sub, total: sub, payMethod: pm, payLabel: PAY_LABEL[pm], source: 'demo' });
+    BELL.createOrder({ eventId: ev.id, standId: stand.id, standName: stand.name, items, subtotal: sub, total: sub, payMethod: pm, payLabel: PAY_LABEL[pm], source: 'demo', guestName: names[Math.floor(Math.random() * names.length)] });
   }
 
   function presentTick() {
@@ -182,7 +187,6 @@
     else { clearInterval(presentTimer); toast('Präsentationsmodus gestoppt'); }
   }
 
-  /* ---------- Events ---------- */
   document.addEventListener('click', (e) => {
     const ev = e.target.closest('[data-ev]');
     if (ev) {
