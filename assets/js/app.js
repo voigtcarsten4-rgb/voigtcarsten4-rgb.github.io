@@ -10,6 +10,8 @@
   let activeOrderId = null;
   let currentView = 'start';
   let backTarget = 'start';
+  let persoName = '';
+  let persoWhen = 'sofort';
   const lastIdxById = {};
 
   const MINE = 'bellfl_mine_v1';
@@ -19,6 +21,7 @@
   const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar am Stand', bon: 'Bell Bon' };
   const SYM = { received: 'sym-received', prep: 'sym-prep', grill: 'sym-prep', almost: 'sym-prep', ready: 'sym-pickup', done: 'sym-received' };
   const SH = { received: 'sh-received', prep: 'sh-prep', grill: 'sh-grill', almost: 'sh-almost', ready: 'sh-ready', done: 'sh-done' };
+  const whenLabel = w => w === '10min' ? 'in ~10 Min' : 'sofort';
 
   const isBonMode = () => BELL.getSettings().mode === 'bon';
   const sig = items => (items || []).map(i => i.id + ':' + i.qty).sort().join(',');
@@ -71,13 +74,13 @@
     renderWelcomeBack();
   }
 
-  // USP3: leichte Bindung – Favorit / zuletzt bestellt prominent zum erneuten Bestellen
   function renderWelcomeBack() {
     const wb = el('#welcome-back'); if (!wb) return;
     const fav = BELL.getFav();
     const mine = getMine().map(id => BELL.getOrder(id)).filter(Boolean).sort((a, b) => b.createdAt - a.createdAt);
     const last = mine[0];
     const src = fav ? { fav: true, items: fav.items } : (last ? { fav: false, items: last.items } : null);
+    const nm = BELL.getName();
     if (!src || !src.items || !src.items.length) { wb.innerHTML = ''; return; }
     const names = src.items.map(i => i.qty + '× ' + i.name).join(', ');
     wb.innerHTML = `
@@ -85,7 +88,7 @@
         <div class="welcome">
           <div class="wc-ic">${src.fav ? '★' : '🔥'}</div>
           <div class="wc-tx">
-            <b>${src.fav ? 'Dein Matchpause-Favorit' : 'Willkommen zurück'}</b>
+            <b>${src.fav ? (nm ? nm + 's Favorit' : 'Dein Matchpause-Favorit') : 'Willkommen zurück' + (nm ? ', ' + esc(nm) : '')}</b>
             <span>${esc(names)}</span>
           </div>
           <button class="btn btn-primary btn-sm" data-act="order-fav">Nochmal</button>
@@ -152,7 +155,8 @@
               <span class="buy-ctrl">${buyCtrl(p.id)}</span>
             </div>
           </div>`).join('')}
-      </div>`).join('');
+      </div>`).join('') + `
+      <button class="bw-entry" data-act="bell-world">🔥 <span><b>Bell-Welt entdecken</b> · Qualität, Herkunft & Grillmomente</span> <span class="bw-arrow">↗</span></button>`;
 
     setupSpy(cats);
     updateCartBar();
@@ -220,32 +224,46 @@
         <div class="ln grand"><span>Total</span><span class="num">${BELL.chf(cartTotal())}</span></div>
       </div>`;
 
-    // USP2: FastLane-Live-Vorteil
     const ahead = BELL.getOrders().filter(o => o.status !== 'done' && o.status !== 'ready').length;
     const saved = Math.max(3, cartCount() * 2 + ahead * 2);
     const bon = isBonMode();
     foot.innerHTML = `
       <div class="fl-advantage">
         <span class="fl-ic">⚡</span>
-        <div><b>FastLane-Vorteil</b><span>Du sparst ca. ${saved} Min Anstehen – wir bereiten frisch vor, während du unterwegs bist.</span></div>
+        <div><b>FastLane-Vorteil</b><span>Du sparst ca. ${saved} Min Anstehen – das Grillteam sieht deine Bestellung sofort.</span></div>
       </div>
       <div class="demo-note" style="margin:10px 0 12px">${icon('info')}<span>${bon
         ? 'Bon-Modus – du erhältst einen digitalen Bell-Bon und zahlst am Stand.'
-        : 'Demo – im nächsten Schritt wird keine echte Zahlung ausgelöst.'}</span></div>
+        : 'Fast geschafft – im nächsten Schritt bereiten wir deine Bestellung vor (Demo).'}</span></div>
       <button class="btn btn-primary btn-block btn-lg" data-act="checkout">${bon
         ? '🎟️ Bon erstellen · ' + BELL.chf(cartTotal())
         : 'Bestellen · ' + BELL.chf(cartTotal())}</button>`;
   }
 
+  /* ---------- Personalisierung (optional, lokal) ---------- */
+  function persoBlock() {
+    return `<div class="perso">
+      <label class="perso-l">Wie dürfen wir dich aufrufen? <span>(optional)</span></label>
+      <input id="perso-name" class="perso-inp" type="text" maxlength="24" autocomplete="off" placeholder="Vorname / Spitzname" value="${esc(BELL.getName())}" />
+      <div class="perso-when">
+        <button type="button" class="chip-when ${persoWhen === 'sofort' ? 'active' : ''}" data-act="when" data-when="sofort">⚡ Sofort abholen</button>
+        <button type="button" class="chip-when ${persoWhen === '10min' ? 'active' : ''}" data-act="when" data-when="10min">⏱️ In ~10 Min</button>
+      </div>
+      <div class="perso-note">${icon('info')} Freiwillig · nur für diese Demo · lokal auf diesem Gerät</div>
+    </div>`;
+  }
+  const trustLine = () => `<div class="trust">${icon('check')} <span>Bell Qualität – frisch vorbereitet für deinen Eventmoment.</span></div>`;
+  function capturePerso() { const i = el('#perso-name'); persoName = i ? i.value.trim() : ''; BELL.setName(persoName); }
+
   /* ---------- Payment (Zahlungs-Modus) ---------- */
   function openPay() {
-    el('#pay-title').textContent = 'Zahlung wählen';
+    el('#pay-title').textContent = 'Bestellung abschliessen';
     payMethod = null;
     const methods = [
       ['twint', 'TWINT'], ['applepay', 'Apple Pay'], ['googlepay', 'Google Pay'],
       ['card', 'Kreditkarte'], ['cash', 'Bar am Stand']
     ];
-    el('#pay-body').innerHTML = `
+    el('#pay-body').innerHTML = persoBlock() + `
       <div class="pay-grid">
         ${methods.map(([m, n]) => `
           <button class="pay-method" data-act="pay-select" data-method="${m}">
@@ -253,8 +271,9 @@
             <span class="pm-name">${esc(n)}</span>
           </button>`).join('')}
       </div>
-      <div class="demo-note" style="margin-top:var(--s-5)">${icon('info')}
-        <span><strong>Demo-Version – es wird keine echte Zahlung durchgeführt.</strong> Alle Beträge sind fiktiv und dienen nur zur Veranschaulichung.</span>
+      ${trustLine()}
+      <div class="demo-note" style="margin-top:12px">${icon('info')}
+        <span><strong>Demo-Version – es wird keine echte Zahlung durchgeführt.</strong></span>
       </div>`;
     el('#pay-foot').innerHTML = `<button class="btn btn-primary btn-block btn-lg" id="pay-now" data-act="pay-now" disabled>Zahlungsart wählen</button>`;
     openSheet('sheet-pay');
@@ -265,11 +284,12 @@
     els('#pay-body .pay-method').forEach(b => b.classList.toggle('sel', b.dataset.method === m));
     const btn = el('#pay-now');
     btn.disabled = false;
-    btn.textContent = (m === 'cash' ? 'Bestellung aufgeben' : 'Jetzt bezahlen') + ' · ' + BELL.chf(cartTotal());
+    btn.textContent = (m === 'cash' ? 'Bestellung aufgeben' : 'Demo-Zahlung bestätigen') + ' · ' + BELL.chf(cartTotal());
   }
 
   function processPay() {
     if (!payMethod) return;
+    capturePerso();
     const total = cartTotal();
     el('#pay-foot').innerHTML = '';
     el('#pay-title').textContent = 'Zahlung';
@@ -288,7 +308,7 @@
             <svg viewBox="0 0 52 52" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path class="draw" d="M14 27l8 8 16-18"/></svg>
           </div>
           <h3>Bestellung bestätigt</h3>
-          <p class="t-muted" style="margin-top:6px">Dein Bell-Moment ist auf dem Grill · ${esc(PAY_LABEL[payMethod])} · <span class="num">${BELL.chf(total)}</span></p>
+          <p class="t-muted" style="margin-top:6px">Dein Bell-Moment ist unterwegs auf den Grill · <span class="num">${BELL.chf(total)}</span></p>
         </div>`;
       buzz(24);
       setTimeout(() => finalizeOrder(payMethod), 950);
@@ -299,7 +319,7 @@
   function openBon() {
     const total = cartTotal();
     el('#pay-title').textContent = 'Bell Bon erstellen';
-    el('#pay-body').innerHTML = `
+    el('#pay-body').innerHTML = persoBlock() + `
       <div class="bon-preview">
         <div class="bon-strip">🎟️ BELL BON · DEMO</div>
         <div class="bon-mid">
@@ -307,12 +327,14 @@
           <div class="bon-sub">Einlösbar am Bell-Stand</div>
         </div>
         <div class="bon-note">Im Bon-System zahlst du <strong>nicht digital</strong>. Du bekommst einen digitalen Bon mit Abholnummer und löst ihn am Stand ein – bar oder mit Festival-Bons.</div>
-      </div>`;
+      </div>
+      ${trustLine()}`;
     el('#pay-foot').innerHTML = `<button class="btn btn-primary btn-block btn-lg" data-act="bon-create">🎟️ Bon erstellen · ${BELL.chf(total)}</button>`;
     openSheet('sheet-pay');
   }
 
   function processBon() {
+    capturePerso();
     const total = cartTotal();
     el('#pay-foot').innerHTML = '';
     el('#pay-title').textContent = 'Bell Bon';
@@ -330,7 +352,7 @@
             <svg viewBox="0 0 52 52" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path class="draw" d="M14 27l8 8 16-18"/></svg>
           </div>
           <h3>Bell Bon erstellt</h3>
-          <p class="t-muted" style="margin-top:6px">Dein Bell-Moment ist auf dem Grill – zeig den Bon am Stand · <span class="num">${BELL.chf(total)}</span></p>
+          <p class="t-muted" style="margin-top:6px">Dein Bell-Moment ist unterwegs auf den Grill · <span class="num">${BELL.chf(total)}</span></p>
         </div>`;
       buzz(24);
       setTimeout(() => finalizeOrder('bon'), 950);
@@ -348,7 +370,8 @@
     const pm = method || payMethod || 'card';
     const order = BELL.createOrder({
       eventId: ev.id, standId: stand.id, standName: stand.name,
-      items, subtotal, total: subtotal, payMethod: pm, payLabel: PAY_LABEL[pm]
+      items, subtotal, total: subtotal, payMethod: pm, payLabel: PAY_LABEL[pm],
+      guestName: persoName, pickupWhen: persoWhen
     });
     addMine(order.id);
     cart = {}; payMethod = null;
@@ -356,8 +379,28 @@
     activeOrderId = order.id; backTarget = 'start';
     renderOrder(order.id, 'success');
     show('success');
-    toast((pm === 'bon' ? 'Bon ' : 'Bestellung ') + order.pickup + ' · dein Bell-Moment läuft', 'ok');
+    toast('Danke' + (persoName ? ', ' + persoName : '') + ' – dein Bell-Moment ' + order.pickup + ' läuft', 'ok');
     buzz(30);
+  }
+
+  /* ---------- Bell-Welt Drawer ---------- */
+  function openBell() {
+    el('#bell-title').textContent = 'Bell-Welt entdecken';
+    el('#bell-body').innerHTML = `
+      <div class="bw-hero">
+        <span class="bw-claim">„Dafür wurde Feuer entdeckt."</span>
+        <span class="bw-sub">Bell BBQ-Welt</span>
+      </div>
+      <div class="bw-mod"><div class="bw-ic">🔥</div><div><b>Qualität, die man schmeckt.</b><span>Schweizer Fleisch, Geflügel & Charcuterie – Handwerk und Herkunft, denen Gäste vertrauen.</span></div></div>
+      <div class="bw-mod"><div class="bw-ic">🍖</div><div><b>Grillmomente für Events.</b><span>Vom Stadion bis zum Firmenfest: frisch grilliert, schnell serviert.</span></div></div>
+      <div class="bw-mod"><div class="bw-ic">⚡</div><div><b>Schneller Service, frisch vom Grill.</b><span>Bell FastLane bringt die Bell-Qualität ohne Anstehen zu deinem Eventmoment.</span></div></div>
+      <div class="bw-links">
+        <a class="btn btn-soft btn-block" href="https://www.bell.ch/de/themenwelten/bbq/" target="_blank" rel="noopener">Bell BBQ-Welt entdecken ↗</a>
+        <a class="btn btn-ghost btn-block" href="https://www.bell.ch/de/kochwissen/bbq-tipps/" target="_blank" rel="noopener">BBQ-Ratgeber & Grilltipps ↗</a>
+        <a class="btn btn-ghost btn-block" href="https://www.bell.ch/de/ueber-bell/unsere-werte/" target="_blank" rel="noopener">Über Bell & Werte ↗</a>
+      </div>
+      <div class="perso-note" style="margin-top:12px">${icon('info')} Externe Links zur offiziellen Bell-Webseite (öffnen in neuem Tab).</div>`;
+    openSheet('sheet-bell');
   }
 
   /* ---------- Visueller Bestellablauf (Journey) ---------- */
@@ -391,6 +434,7 @@
     const isBon = o.payMethod === 'bon';
     const fav = BELL.getFav();
     const isFav = !!(fav && sig(fav.items) === sig(o.items));
+    const nm = o.guestName || '';
 
     const prev = lastIdxById[o.id];
     const justAdvanced = (typeof prev === 'number' && idx > prev);
@@ -401,12 +445,12 @@
     const estWait = Math.max(2, aheadActive * 2 + 3);
 
     const subt = {
-      received: 'Wir haben deine Bestellung erhalten.',
+      received: (nm ? 'Danke, ' + nm + '! ' : '') + 'Wir haben deine Bestellung erhalten.',
       prep: 'Deine Bestellung wird vorbereitet.',
       grill: 'Frisch auf dem Grill 🔥',
       almost: 'Gleich fertig – nur noch einen Moment.',
-      ready: (isBon ? 'Komm zum ' + o.standName + ', zeig deinen Bon und hol ab!' : 'Komm zum ' + o.standName + ' und zeig deine Nummer!'),
-      done: 'Abgeschlossen – en Guete! 😋'
+      ready: (nm ? nm + ', komm' : 'Komm') + ' zum ' + o.standName + (isBon ? ', zeig deinen Bon und hol ab!' : ' und zeig deine Nummer!'),
+      done: 'Abgeschlossen – en Guete!' + (nm ? ' 😋' : ' 😋')
     }[o.status];
 
     const itemsHtml = o.items.map(it =>
@@ -416,7 +460,7 @@
     const chatLog = (o.messages || []).map(m => {
       if (m.from === 'system') return `<div class="sys-msg">${esc(m.text)}<span class="tm">${BELL.clock(m.ts)}</span></div>`;
       return `<div class="bubble ${m.from === 'guest' ? 'me' : 'them'}">${esc(m.text)}<span class="tm">${m.from === 'guest' ? 'Du' : 'Bell-Crew'} · ${BELL.clock(m.ts)}</span></div>`;
-    }).join('') || `<div class="t-muted center" style="font-size:var(--fs-sm);padding:8px">Noch keine Nachrichten. Schreib der Crew bei Sonderwünschen.</div>`;
+    }).join('') || `<div class="t-muted center" style="font-size:var(--fs-sm);padding:8px">Noch keine Nachrichten. Schreib dem Grillteam bei Sonderwünschen.</div>`;
 
     const receiptCard = isBon ? `
       <div class="card bon-receipt" style="margin-top:var(--s-5);overflow:hidden">
@@ -457,7 +501,7 @@
       </div>
 
       <div class="pickup-card" style="margin-top:var(--s-4)">
-        <div class="lbl">${isBon ? 'Dein Bon · Abholnummer' : 'Deine Abholnummer'}</div>
+        <div class="lbl">${isBon ? 'Dein Bon · Abholnummer' : 'Deine Abholnummer'}${nm ? ' · ' + esc(nm) : ''}</div>
         <div class="no">${esc(o.pickup)}</div>
         ${showWait
           ? `<div style="margin-top:10px"><span style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:8px 16px;border-radius:999px;font-weight:800">⏱️ Bereit in ≈ ${estWait} Min</span></div>`
@@ -466,7 +510,7 @@
       </div>
 
       <div class="bell-pass">
-        <div class="bp-l"><span class="bp-k">🎟️ Dein Bell Moment</span><span class="bp-no">${esc(o.pickup)}</span><span class="bp-sub">Danke – dein Grillmoment ist vorbereitet. Beim nächsten Scan direkt erneut bestellen.</span></div>
+        <div class="bp-l"><span class="bp-k">🎟️ Dein Bell Moment</span><span class="bp-no">${esc(o.pickup)}</span><span class="bp-sub">Danke${nm ? ', ' + esc(nm) : ''} für deinen Bell-Moment. Beim nächsten Scan direkt erneut bestellen.</span></div>
         <button class="btn ${isFav ? 'btn-primary' : 'btn-soft'} btn-sm" data-act="fav-toggle" data-id="${o.id}">${isFav ? '★ Favorit' : '☆ Favorit merken'}</button>
       </div>
 
@@ -475,7 +519,7 @@
       ${receiptCard}
 
       <div class="card pad" style="margin-top:var(--s-5)">
-        <div class="row" style="gap:8px;margin-bottom:var(--s-3)">${icon('chat')}<h3 style="font-size:var(--fs-lg)">Nachricht an die Crew</h3></div>
+        <div class="row" style="gap:8px;margin-bottom:var(--s-3)">${icon('chat')}<h3 style="font-size:var(--fs-lg)">Nachricht ans Grillteam</h3></div>
         <div class="quick-msgs">
           ${BELL.QUICK_MSGS.map(q => `<button class="qm" data-act="quick-msg" data-id="${o.id}" data-text="${esc(q)}">${esc(q)}</button>`).join('')}
         </div>
@@ -489,6 +533,7 @@
       <div class="stack" style="margin-top:var(--s-6)">
         <button class="btn btn-primary btn-block btn-lg" data-act="new-order">${icon('bag')} Neue Bestellung starten</button>
         <button class="btn btn-soft btn-block" data-act="reorder" data-id="${o.id}">${icon('refresh')} Diese Bestellung nochmal</button>
+        <button class="btn btn-ghost btn-block" data-act="bell-world">${icon('info')} Mehr über Bell entdecken</button>
         <button class="btn btn-ghost btn-block" data-nav="${view === 'success' ? 'start' : 'track'}">${view === 'success' ? 'Zur Startseite' : 'Zurück zur Übersicht'}</button>
       </div>`;
 
@@ -606,6 +651,8 @@
       case 'pay-select': selectPay(a.dataset.method); break;
       case 'pay-now': processPay(); break;
       case 'bon-create': processBon(); break;
+      case 'when': persoWhen = a.dataset.when; els('.chip-when').forEach(c => c.classList.toggle('active', c.dataset.when === persoWhen)); break;
+      case 'bell-world': openBell(); break;
       case 'order-received': BELL.setStatus(id, 'done'); toast('Abgeschlossen – en Guete!', 'ok'); break;
       case 'new-order': cart = {}; closeSheets(); renderMenu(); show('menu'); toast('Neuer Grillmoment – das Menü ist bereit'); break;
       case 'reorder': {
@@ -678,7 +725,25 @@
 
   BELL.onChange(() => { refreshLive(); });
 
+  /* ---------- Intro (1. Besuch, skippbar) ---------- */
+  function runIntro() {
+    const introEl = el('#intro'); if (!introEl) return;
+    let seen = false; try { seen = !!localStorage.getItem('bellfl_intro_v1'); } catch (e) {}
+    if (seen) { introEl.parentNode && introEl.parentNode.removeChild(introEl); return; }
+    introEl.classList.add('show');
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true;
+      try { localStorage.setItem('bellfl_intro_v1', '1'); } catch (e) {}
+      introEl.classList.add('out');
+      setTimeout(() => { introEl.parentNode && introEl.parentNode.removeChild(introEl); }, 600);
+    };
+    introEl.addEventListener('click', finish);
+    setTimeout(finish, 2600);
+  }
+
   function boot() {
+    runIntro();
     renderStart();
     const h = location.hash;
     if (h.indexOf('order=') > -1) {
