@@ -23,8 +23,8 @@
     .qr-card .top h1 { font-size: 26px; }
     .qr-card .top p { opacity: .92; margin-top: 6px; font-size: 14px; }
     .qr-card .qrwrap { padding: 26px; text-align: center; }
-    .qr-card .qrwrap .frame { width: 240px; height: 240px; margin: 0 auto; padding: 12px; border: 3px solid var(--ink); border-radius: 20px; }
-    .qr-card .qrwrap .frame svg { width: 100%; height: 100%; }
+    .qr-card .qrwrap .frame { width: 240px; height: 240px; margin: 0 auto; padding: 14px; background:#fff; border: 3px solid var(--ink); border-radius: 20px; }
+    .qr-card .qrwrap .frame svg { width: 100%; height: 100%; display:block; }
     .qr-card .scan { font-weight: 900; font-size: 22px; margin-top: 16px; letter-spacing: -.02em; }
     .qr-card .ev { color: var(--bell-red); font-weight: 800; margin-top: 4px; }
     .qr-card .steps3 { display: flex; justify-content: center; gap: 8px; margin: 18px 0 6px; flex-wrap: wrap; }
@@ -70,7 +70,7 @@
       var url = new URL('../index.html', location.href).href;
       try {
         var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-        document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
+        document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 4, scalable: true });
         var svg = document.querySelector('#qr svg'); if (svg) { svg.style.width = '100%'; svg.style.height = '100%'; }
       } catch (e) { document.getElementById('qr').textContent = 'QR'; }
       document.getElementById('url').textContent = url;
