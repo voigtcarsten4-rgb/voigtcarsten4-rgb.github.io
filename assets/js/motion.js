@@ -1,9 +1,8 @@
 /* =====================================================================
    BELL FASTLANE — Premium Motion Layer (motion.js)
-   Lebendige, performante, jederzeit abschaltbare Atmosphäre:
-   Glut-Partikel, Hitzeflimmern, Licht-Sweep, Intro-Reveal,
-   Fly-to-Cart-Mikrointeraktion, Animations-Schalter.
-   Greift NICHT in die Bestelllogik ein (rein visuell, progressiv).
+   Atmosphäre (Glut/Hitze/Intro), Fly-to-Cart, Animations-Schalter
+   + Mobile-Härtung (verhindert abgeschnittene Kacheln) + Bild-Zoom
+   + Crew-Ampel-Styles. Rein visuell, greift nicht in die Logik ein.
    ===================================================================== */
 (function () {
   'use strict';
@@ -11,7 +10,6 @@
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var on = (localStorage.getItem(KEY) || (reduce ? 'off' : 'on')) === 'on';
 
-  /* ---- injizierte Styles ---- */
   function injectStyle() {
     if (document.getElementById('bellfx-style')) return;
     var css = ''
@@ -28,14 +26,37 @@
       + 'body.motion-off .hero-bg{animation:none!important;transform:scale(1.04)!important}'
       + 'body.motion-off .demo-flag .dot{animation:none!important}'
       + 'body.motion-off .ticket{animation:none!important}'
-      + 'body.motion-off .tl-step.current .dot{animation:none!important}';
+      + 'body.motion-off .tl-step.current .dot{animation:none!important}'
+      // ---- Mobile-Härtung: kein Abschneiden ----
+      + '.product .info,.cart-line>div,.ticket,.ticket .items,.metric,.panel,.kpi,.receipt,.row>*{min-width:0}'
+      + '.product .info h3,.product .info .desc,.cart-line .nm{overflow:hidden;text-overflow:ellipsis}'
+      + '.ticket .t-foot{flex-wrap:wrap}'
+      + '.product .thumb img{transition:transform .5s cubic-bezier(.22,.61,.36,1)}'
+      + '.product:hover .thumb img{transform:scale(1.07)}'
+      + '@media(max-width:560px){'
+      +   '.cat-bar{margin-left:calc(-1*var(--s-4));margin-right:calc(-1*var(--s-4))}'
+      +   '.cat-scroll{padding-left:var(--s-4);padding-right:var(--s-4)}'
+      +   '.product{grid-template-columns:82px 1fr auto;gap:12px;padding:12px}'
+      +   '.product .thumb{width:82px;height:82px}'
+      +   '.appbar .inner{gap:8px}.appbar .role-tag{display:none}'
+      +   '.hero .inner{min-height:54vh}.metric .v{font-size:var(--fs-xl)}'
+      +   '#recent .row span{min-width:0}'
+      + '}'
+      // ---- Crew-Wartezeit-Ampel ----
+      + '.ticket.urge-warn{box-shadow:0 0 0 2px var(--warn),var(--sh-2)}'
+      + '.ticket.urge-late{box-shadow:0 0 0 2px var(--bell-red),var(--sh-2);animation:urgePulse 1.7s infinite}'
+      + '@keyframes urgePulse{0%{box-shadow:0 0 0 0 rgba(226,0,26,.45),var(--sh-2)}70%{box-shadow:0 0 0 9px rgba(226,0,26,0),var(--sh-2)}100%{box-shadow:0 0 0 0 rgba(226,0,26,0),var(--sh-2)}}'
+      + 'body.motion-off .ticket.urge-late{animation:none}'
+      + '.wait-badge{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;margin-left:8px}'
+      + '.wait-badge.ok{background:var(--success-bg);color:var(--success)}'
+      + '.wait-badge.warn{background:#FFF1DE;color:var(--warn)}'
+      + '.wait-badge.late{background:rgba(226,0,26,.12);color:var(--bell-red)}';
     var s = document.createElement('style'); s.id = 'bellfx-style'; s.textContent = css;
     document.head.appendChild(s);
   }
 
   function apply() { document.body.classList.toggle('motion-off', !on); }
 
-  /* ---- Hero-Atmosphäre ---- */
   function clearHero() {
     ['fx-embers', 'fx-heat', 'fx-sweep'].forEach(function (c) {
       var n = document.querySelector('.hero .' + c); if (n) n.remove();
@@ -65,7 +86,6 @@
     }
   }
 
-  /* ---- Intro-Reveal ---- */
   function intro() {
     if (!on || !window.gsap) return;
     try { window.gsap.from('.appbar .inner > *', { y: -12, opacity: 0, stagger: .05, duration: .4, ease: 'power2.out' }); } catch (e) {}
@@ -74,7 +94,6 @@
     if (hero.length) { try { window.gsap.from(hero, { y: 20, opacity: 0, stagger: .09, duration: .55, ease: 'power3.out', delay: .1 }); } catch (e) {} }
   }
 
-  /* ---- Fly-to-Cart ---- */
   function flyToCart(srcEl) {
     if (!on || !srcEl || !window.gsap) return;
     var r = srcEl.getBoundingClientRect(); if (!r.width) return;
@@ -85,25 +104,18 @@
     var bar = document.getElementById('cartbar');
     var tx = window.innerWidth / 2, ty = window.innerHeight - 54;
     if (bar) { var br = bar.getBoundingClientRect(); if (br.width) { tx = br.left + br.width / 2; ty = br.top + br.height / 2; } }
-    window.gsap.to(ghost, {
-      left: tx - 17, top: ty - 17, width: 34, height: 34, opacity: .25, rotation: 16,
-      duration: .72, ease: 'power2.in', onComplete: function () { ghost.remove(); }
-    });
+    window.gsap.to(ghost, { left: tx - 17, top: ty - 17, width: 34, height: 34, opacity: .25, rotation: 16, duration: .72, ease: 'power2.in', onComplete: function () { ghost.remove(); } });
     var bag = document.getElementById('cart-count');
     if (bag) window.gsap.fromTo(bag, { scale: 1 }, { scale: 1.35, duration: .18, yoyo: true, repeat: 1, ease: 'power2.out', delay: .55 });
   }
 
-  /* ---- Toggle-Button ---- */
   function buildToggle() {
-    var bars = document.querySelectorAll('.appbar .inner');
-    bars.forEach(function (inner) {
+    document.querySelectorAll('.appbar .inner').forEach(function (inner) {
       if (inner.querySelector('[data-fxtoggle]')) return;
       var b = document.createElement('button');
       b.className = 'icon-btn fx-mtoggle' + (on ? '' : ' off');
-      b.setAttribute('data-fxtoggle', '');
-      b.setAttribute('aria-label', 'Animationen an/aus');
-      b.setAttribute('title', 'Animationen an/aus');
-      b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('data-fxtoggle', ''); b.setAttribute('aria-label', 'Animationen an/aus');
+      b.setAttribute('title', 'Animationen an/aus'); b.setAttribute('aria-pressed', String(on));
       b.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.6 4.6L18 8l-4.4 1.4L12 14l-1.6-4.6L6 8l4.4-1.4L12 2Z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14Z"/></svg>';
       var demo = inner.querySelector('.demo-flag');
       if (demo) inner.insertBefore(b, demo); else inner.appendChild(b);
