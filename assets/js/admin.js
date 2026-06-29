@@ -105,7 +105,7 @@
     const url = new URL('index.html', location.href).href;
     try {
       const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-      el('#qr-target').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 1, scalable: true });
+      el('#qr-target').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 4, scalable: true });
       const svg = el('#qr-target svg'); if (svg) { svg.style.width = '100%'; svg.style.height = '100%'; }
     } catch (e) { el('#qr-target').textContent = 'QR'; }
     el('#qr-url').textContent = url;
