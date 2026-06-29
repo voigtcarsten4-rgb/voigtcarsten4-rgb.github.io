@@ -1,8 +1,8 @@
 /* =====================================================================
    BELL FASTLANE — Premium Motion Layer (motion.js)
    Atmosphäre, Fly-to-Cart, Animations-Schalter, Mobile-Härtung,
-   Original-Bell-Logo, App-Feel-Rundungen, visueller Status-Screen,
-   Bestellablauf-Journey, Live-Updates. Rein visuell.
+   Original-Bell-Logo, App-Feel, Status-Screen, Bestellablauf-Journey,
+   Bon-Voucher, Live-Updates. Rein visuell.
    ===================================================================== */
 (function () {
   'use strict';
@@ -33,6 +33,7 @@
       // ---- App-Feel: rundere, taktilere Elemente ----
       + '.card{border-radius:22px}.btn{border-radius:16px}.btn-lg{border-radius:18px}.product{border-radius:20px}.pay-method{border-radius:18px}.metric,.panel,.kds-stat{border-radius:20px}.sheet{border-radius:28px 28px 0 0}'
       + '.btn{transition:transform .12s var(--ease),background .2s,box-shadow .2s}.btn:active{transform:scale(.97)}'
+      + '.product:active{transform:scale(.99)}'
       // ---- Mobile-Härtung: kein Abschneiden ----
       + '.product .info,.cart-line>div,.ticket,.ticket .items,.metric,.panel,.kpi,.receipt,.row>*{min-width:0}'
       + '.product .info h3,.product .info .desc,.cart-line .nm{overflow:hidden;text-overflow:ellipsis}'
@@ -48,7 +49,7 @@
       +   '.hero .inner{min-height:54vh}.metric .v{font-size:var(--fs-xl)}'
       +   '#recent .row span{min-width:0}'
       + '}'
-      // ---- Visueller Status-Screen (App-Gefühl) ----
+      // ---- Visueller Status-Screen ----
       + '.status-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:24px 20px;border-radius:24px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--sh-3)}'
       + '.status-hero .symwrap{width:108px;height:108px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;margin-bottom:4px;box-shadow:0 12px 30px rgba(0,0,0,.18)}'
       + '.status-hero .symwrap img{width:74px;height:74px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.28))}'
@@ -91,7 +92,6 @@
       + '.fs-pulse{width:11px;height:11px;border-radius:50%;background:var(--bell-red);animation:lvpulse 1.5s infinite}'
       + 'body.motion-off .flow-step .fs-ico img{animation:none!important}'
       + 'body.motion-off .flow-live .lv-dot,body.motion-off .fs-pulse{animation:none!important}'
-      // live "just advanced" pop
       + '.status-hero.just{animation:pop .6s var(--ease)}'
       + '.flow-step.just .fs-ico{animation:pop .6s var(--ease)}'
       + '@keyframes pop{0%{transform:scale(1)}30%{transform:scale(1.14)}100%{transform:scale(1)}}'
@@ -110,7 +110,31 @@
       + '.wait-badge{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;margin-left:8px}'
       + '.wait-badge.ok{background:var(--success-bg);color:var(--success)}'
       + '.wait-badge.warn{background:#FFF1DE;color:var(--warn)}'
-      + '.wait-badge.late{background:rgba(226,0,26,.12);color:var(--bell-red)}';
+      + '.wait-badge.late{background:rgba(226,0,26,.12);color:var(--bell-red)}'
+      // ---- Bon-System / Voucher ----
+      + '.bon-preview{border-radius:18px;overflow:hidden;border:1.5px dashed var(--bell-red);background:linear-gradient(160deg,#fff,#fff6f0)}'
+      + '.bon-strip{background:var(--bell-red);color:#fff;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:.06em}'
+      + '.bon-mid{padding:22px 16px;text-align:center}'
+      + '.bon-val{font-size:34px;font-weight:900;color:var(--bell-red);letter-spacing:-.02em}'
+      + '.bon-sub{font-size:13px;color:var(--ink-2);margin-top:2px}'
+      + '.bon-note{font-size:12.5px;line-height:1.5;color:var(--ink-2);background:var(--surface-2);padding:12px 16px;border-top:1.5px dashed var(--line-2)}'
+      + '.bon-stamp{font-size:62px;line-height:1;animation:stamp .55s var(--ease)}'
+      + '@keyframes stamp{0%{transform:scale(2.4) rotate(-16deg);opacity:0}60%{transform:scale(.92) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}'
+      + 'body.motion-off .bon-stamp{animation:none}'
+      + '.bon-receipt{border:1.5px dashed var(--bell-red)!important;background:linear-gradient(160deg,#fff,#fff7f2)}'
+      + '.bon-r-top{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--bell-red)}'
+      + '.bon-r-kicker{color:#fff;font-weight:800;font-size:12px;letter-spacing:.05em}'
+      + '.bon-r-top strong{font-size:20px}'
+      + '.bon-r-no{text-align:center;font-size:40px;font-weight:900;letter-spacing:.05em;color:var(--ink);padding:16px 0 0}'
+      + '.bon-r-val{text-align:center;font-size:15px;font-weight:800;color:var(--bell-red);padding:2px 0 14px}'
+      + '.bon-perf{height:0;border-top:2px dashed var(--line-2);margin:0 14px}'
+      + '.bon-r-body{padding:14px 20px}'
+      + '.bon-r-body .r-line{display:flex;justify-content:space-between;padding:3px 0;font-size:var(--fs-sm)}'
+      + '.bon-r-foot{margin:6px 16px 12px;padding:11px;border-radius:12px;text-align:center;font-weight:800;font-size:13px;background:#FFF1DE;color:var(--warn)}'
+      + '.bon-r-foot.paid{background:var(--success-bg);color:var(--success)}'
+      + '.mode-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:7px;vertical-align:middle}'
+      + '.bon-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:#FFF1DE;color:var(--warn)}'
+      + '.bon-tag.paid{background:var(--success-bg);color:var(--success)}';
     var s = document.createElement('style'); s.id = 'bellfx-style'; s.textContent = css;
     document.head.appendChild(s);
   }
