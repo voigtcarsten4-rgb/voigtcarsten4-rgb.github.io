@@ -1,7 +1,7 @@
 /* =====================================================================
    BELL FASTLANE — Shared Store (Demo)
    localStorage als Demo-"Datenbank", Cross-Tab-Sync, Produktkatalog,
-   Event-Modi, Bestell-/Status-/Chat-Logik.
+   Event-Modi, Bestell-/Status-/Chat-Logik, Favoriten.
    KEINE echte Zahlung · KEINE echten Kundendaten.
    ===================================================================== */
 (function (global) {
@@ -12,7 +12,8 @@
     settings: 'bellfl_settings_v1',
     seq:      'bellfl_seq_v1',
     seeded:   'bellfl_seeded_v1',
-    crewHb:   'bellfl_crew_hb'
+    crewHb:   'bellfl_crew_hb',
+    fav:      'bellfl_fav_v1'
   };
 
   /* ---------- Status flow ---------- */
@@ -29,12 +30,10 @@
     received: 'Eingegangen', prep: 'In Vorbereitung', grill: 'Auf dem Grill',
     almost: 'Fast fertig', ready: 'Abholbereit', done: 'Abgeschlossen'
   };
-  // Symbol je Phase (gemeinsame Bildsprache Gast + Crew)
   const STATUS_SYM = {
     received: 'sym-received', prep: 'sym-prep', grill: 'sym-prep',
     almost: 'sym-prep', ready: 'sym-pickup', done: 'sym-received'
   };
-  // Kurze freundliche Zeile je Phase (Gast-Journey)
   const STATUS_GUEST_LINE = {
     received: 'Bei der Crew eingegangen',
     prep:     'Zutaten werden vorbereitet',
@@ -43,7 +42,6 @@
     ready:    'Bereit zur Abholung',
     done:     'Abgeschlossen – en Guete!'
   };
-  // Automatische Live-Meldung an den Gast bei Vorwärts-Statuswechsel (indirekte Kommunikation)
   const STATUS_SYS = {
     prep:   '👨‍🍳 Deine Bestellung wird zubereitet.',
     grill:  '🔥 Jetzt frisch auf dem Grill!',
@@ -51,7 +49,7 @@
     ready:  '✅ Abholbereit! Komm zum Stand und zeig deine Abholnummer.'
   };
 
-  /* ---------- Product artwork (SVG fallback, falls Foto nicht lädt) ---------- */
+  /* ---------- Product artwork (SVG fallback) ---------- */
   function art(id) {
     const bg = (c1, c2) => `<defs><radialGradient id="g_${id}" cx="50%" cy="30%" r="80%"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></radialGradient></defs><rect width="96" height="96" rx="14" fill="url(#g_${id})"/>`;
     const A = {
@@ -70,15 +68,15 @@
 
   /* ---------- Product catalog (CHF, inkl. MwSt) ---------- */
   const PRODUCTS = [
-    { id: 'kloepfer',       name: 'Klöpfer',                  cat: 'grill', price: 6.50, desc: 'Der Schweizer Cervelat-Klassiker, frisch vom Grill – mit knusprigem Bürli.', tags: ['Klassiker'] },
-    { id: 'joggeli',        name: 'Joggeli-Wurst',            cat: 'grill', price: 6.00, desc: 'Feine Brüh-Spezialität, knackig grilliert. Der Favorit fürs schnelle Znüni.', tags: [] },
-    { id: 'kalbsbratwurst', name: 'Kalbsbratwurst',           cat: 'grill', price: 7.50, desc: 'St. Galler Art aus zartem Schweizer Kalbfleisch – mit Bürli.', tags: ['Beliebt'] },
-    { id: 'schnitzelbrot',  name: 'Schnitzelbrot',            cat: 'snack', price: 9.50, desc: 'Knuspriges Schnitzel im frischen Brot, mit Salat und Sauce.', tags: ['hot'] },
-    { id: 'sandwich',       name: 'Sandwich',                 cat: 'snack', price: 7.00, desc: 'Frisches Sandwich mit feiner Bell Charcuterie und Salat.', tags: [] },
-    { id: 'wasser',         name: 'Wasser',                   cat: 'drink', price: 3.50, desc: 'Schweizer Mineralwasser – mit oder ohne Kohlensäure.', tags: ['cold'] },
-    { id: 'cola',           name: 'Cola / Softdrink',         cat: 'drink', price: 4.00, desc: 'Eisgekühlte Erfrischung in verschiedenen Sorten.', tags: ['cold'] },
-    { id: 'feldi',          name: 'Feldschlösschen Bier',     cat: 'beer',  price: 5.50, desc: 'Original, eisgekühlt gezapft. 4.8 % vol.', tags: ['18+'] },
-    { id: 'feldi_af',       name: 'Feldschlösschen alkoholfrei', cat: 'beer', price: 5.00, desc: 'Voller Biergenuss, alkoholfrei. Auch für die Fahrer:innen.', tags: ['0.0'] }
+    { id: 'kloepfer',       name: 'Klöpfer',                  cat: 'grill', price: 6.50, desc: 'Schweizer Cervelat-Klassiker, frisch vom Grill – mit knusprigem Bürli.', story: 'Der Schweizer Klassiker vom Grill – schnell, herzhaft, bereit für den Matchmoment.', tags: ['Klassiker'] },
+    { id: 'joggeli',        name: 'Joggeli-Wurst',            cat: 'grill', price: 6.00, desc: 'Feine Brüh-Spezialität, knackig grilliert.', story: 'Der Stadion-Favorit für Basel-Momente: kräftig, unkompliziert, heiss vom Grill.', tags: [] },
+    { id: 'kalbsbratwurst', name: 'Kalbsbratwurst',           cat: 'grill', price: 7.50, desc: 'St. Galler Art aus zartem Schweizer Kalbfleisch – mit Bürli.', story: 'Fein, mild und hochwertig – die Bell-Bratwurst für klassischen, sauberen Genuss.', tags: ['Beliebt'] },
+    { id: 'schnitzelbrot',  name: 'Schnitzelbrot',            cat: 'snack', price: 9.50, desc: 'Knuspriges Schnitzel im frischen Brot, mit Salat und Sauce.', story: 'Der Sattmacher für Events: knusprig, praktisch, direkt auf die Hand.', tags: ['hot'] },
+    { id: 'sandwich',       name: 'Sandwich',                 cat: 'snack', price: 7.00, desc: 'Frisches Sandwich mit feiner Bell Charcuterie und Salat.', story: 'Frisch belegt mit feiner Bell-Charcuterie – der schnelle Genuss zwischendurch.', tags: [] },
+    { id: 'wasser',         name: 'Wasser',                   cat: 'drink', price: 3.50, desc: 'Schweizer Mineralwasser – mit oder ohne Kohlensäure.', story: 'Eiskalt und erfrischend – die Pause zwischendurch.', tags: ['cold'] },
+    { id: 'cola',           name: 'Cola / Softdrink',         cat: 'drink', price: 4.00, desc: 'Eisgekühlte Erfrischung in verschiedenen Sorten.', story: 'Eisgekühlte Erfrischung – der Klassiker zum Grillgenuss.', tags: ['cold'] },
+    { id: 'feldi',          name: 'Feldschlösschen Bier',     cat: 'beer',  price: 5.50, desc: 'Original, eisgekühlt gezapft. 4.8 % vol.', story: 'Eiskalt gezapft – das Original zum Match.', tags: ['18+'] },
+    { id: 'feldi_af',       name: 'Feldschlösschen alkoholfrei', cat: 'beer', price: 5.00, desc: 'Voller Biergenuss, alkoholfrei. Auch für die Fahrer:innen.', story: 'Voller Biergenuss, alkoholfrei – auch für die Fahrer:innen.', tags: ['0.0'] }
   ];
 
   // Premium-Produktfotos (Leonardo Phoenix, via CDN). Lokale Kopien in assets/img/products/.
@@ -158,7 +156,6 @@
   function onChange(fn) { listeners.push(fn); }
   function emit() { listeners.forEach(fn => { try { fn(); } catch (e) {} }); }
 
-  // BroadcastChannel = sofortiger, zuverlässiger Sync zwischen Tabs im selben Browser
   let bc = null;
   try { bc = new BroadcastChannel('bellfl'); bc.onmessage = function () { emit(); }; } catch (e) { bc = null; }
 
@@ -176,18 +173,21 @@
     if (e.key && (e.key.indexOf('bellfl_') === 0)) emit();
   });
 
-  /* ---------- Crew-Heartbeat (Crew steuert, wenn aktiv) ---------- */
-  // Crew-Tab meldet sich regelmässig. Solange aktiv, pausiert der Gast-Auto-Pilot,
-  // damit Statuswechsel ausschliesslich von der Crew kommen = echtes Zusammenspiel.
+  /* ---------- Crew-Heartbeat ---------- */
   function setCrewActive() { try { localStorage.setItem(KEYS.crewHb, String(Date.now())); } catch (e) {} }
   function isCrewActive() {
     try { return (Date.now() - (parseInt(localStorage.getItem(KEYS.crewHb), 10) || 0)) < 15000; }
     catch (e) { return false; }
   }
 
+  /* ---------- Favoriten (leichte Bindung, lokal) ---------- */
+  function getFav() { return read(KEYS.fav, null); }
+  function setFav(fav) { write(KEYS.fav, fav); }
+  function clearFav() { try { localStorage.removeItem(KEYS.fav); } catch (e) {} emit(); }
+
   /* ---------- Settings ---------- */
   function getSettings() {
-    return read(KEYS.settings, { eventId: 'football', standId: null });
+    return read(KEYS.settings, { eventId: 'football', standId: null, mode: 'payment' });
   }
   function setSettings(patch) {
     const s = Object.assign(getSettings(), patch);
@@ -248,7 +248,6 @@
     o.status = status;
     o.statusTimes = o.statusTimes || {};
     if (!o.statusTimes[status]) o.statusTimes[status] = Date.now();
-    // Vorwärts-Wechsel → automatische Live-Meldung an den Gast (indirekte Kommunikation)
     if (newI > oldI && STATUS_SYS[status]) {
       o.messages = o.messages || [];
       o.messages.push({ from: 'system', text: STATUS_SYS[status], ts: Date.now(), read: true });
@@ -357,10 +356,10 @@
     getOrders, getOrder, createOrder, setStatus, advanceStatus,
     addMessage, markRead, resetDemo, seed,
     setCrewActive, isCrewActive,
+    getFav, setFav, clearFav,
     onChange, chf, timeAgo, clock, minsAgo
   };
 
-  // Seed on first load (any page)
   seed(false);
 
 })(window);
