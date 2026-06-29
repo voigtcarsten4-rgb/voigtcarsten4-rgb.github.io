@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#E2001A" />
-  <meta name="description" content="Bell FastLane – Vorbestellen, bezahlen, abholen. Interne Demo für Bell Grill & Event." />
-  <title>Bell FastLane · Vorbestellen & Abholen</title>
+  <meta name="description" content="Bell FastLane – frisch vom Grill, ohne Anstehen. Vorbestellen, bezahlen, abholen. Interne Demo für Bell BBQ & Event." />
+  <title>Bell FastLane · Frisch vom Grill, ohne Anstehen</title>
   <link rel="icon" href="assets/img/favicon.svg" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="assets/css/bell.css?v=7" />
+  <link rel="stylesheet" href="assets/css/bell.css?v=8" />
 </head>
 <body>
 
@@ -31,37 +31,39 @@
         <div class="hero-bg" id="hero-bg"></div>
         <div class="hero-scrim"></div>
         <div class="container inner">
-          <span class="kicker" id="hero-kicker">🔥 Bell Grill &amp; Event</span>
-          <h1>Vorbestellen.<br>Bezahlen. Abholen.</h1>
-          <p class="lead">Scanne, bestelle und überspringe die Schlange. Deine Bestellung wird frisch am Bell-Stand gegrillt.</p>
+          <span class="kicker" id="hero-kicker">🔥 Bell BBQ &amp; Event</span>
+          <h1>Frisch vom Grill.<br>Ohne Anstehen.</h1>
+          <p class="lead">Bestelle schon in der Warteschlange – wir grillieren frisch, du holst entspannt ab.</p>
           <div class="loc">
             <span class="name" id="hero-event">Fussballmatch</span>
             <span class="meta" id="hero-stand">📍 Bell Grillstand · St. Jakob-Park, Basel</span>
           </div>
           <div class="cta">
-            <button class="btn btn-primary btn-lg" id="cta-order">Jetzt bestellen</button>
+            <button class="btn btn-primary btn-lg" id="cta-order">Jetzt FastLane starten</button>
             <button class="btn btn-ghost btn-lg" id="cta-track">Meine Bestellung verfolgen</button>
           </div>
         </div>
       </div>
 
+      <div id="welcome-back"></div>
+
       <div class="container">
         <div class="sec-head"><h2>So funktioniert's</h2></div>
         <div class="steps">
-          <div class="step"><div class="n">1</div><div><h4>QR-Code scannen</h4><p>Am Bell-Stand oder in der Warteschlange – sofort startklar, ohne App-Installation.</p></div></div>
-          <div class="step"><div class="n">2</div><div><h4>Produkte wählen</h4><p>Menü antippen, Menge festlegen, in den Warenkorb. Schnell und übersichtlich.</p></div></div>
-          <div class="step"><div class="n">3</div><div><h4>Bequem bezahlen</h4><p>TWINT, Apple Pay, Google Pay oder Karte – in Sekunden (Demo).</p></div></div>
-          <div class="step"><div class="n">4</div><div><h4>Abholnummer erhalten</h4><p>Live-Status verfolgen und bei der Anzeige der Nummer abholen.</p></div></div>
+          <div class="step"><div class="n">1</div><div><h4>QR-Code scannen</h4><p>Am Stand oder in der Schlange – sofort startklar, ganz ohne App-Installation.</p></div></div>
+          <div class="step"><div class="n">2</div><div><h4>Grillmoment wählen</h4><p>Antippen, Menge festlegen, fertig. Frische Bell-Spezialitäten vom Grill.</p></div></div>
+          <div class="step"><div class="n">3</div><div><h4>Bequem bezahlen</h4><p>TWINT, Apple Pay, Google Pay, Karte – oder im Bon-Modus am Stand (Demo).</p></div></div>
+          <div class="step"><div class="n">4</div><div><h4>Entspannt abholen</h4><p>Live-Status verfolgen und bei deiner Nummer frisch abholen.</p></div></div>
         </div>
 
         <div class="usp">
-          <span class="t-eyebrow" style="color:var(--bell-ember-soft)">Der USP</span>
-          <h2>Warum Bell FastLane?</h2>
-          <p class="sub">Weniger Schlange, schnellerer Service und mehr Umsatz pro Stunde – ein modernes Erlebnis für Gäste und Crew.</p>
+          <span class="t-eyebrow" style="color:var(--bell-ember-soft)">Der Bell FastLane Vorteil</span>
+          <h2>Mehr Genuss. Weniger Warten.</h2>
+          <p class="sub">Aus dem Grillstand wird ein modernes, schnelles und emotionales Event-Erlebnis – für Gäste und Crew.</p>
           <div class="kpi-grid">
-            <div class="kpi"><div class="big">−40%</div><div class="cap">Wartezeit in der Schlange</div></div>
-            <div class="kpi"><div class="big">+25%</div><div class="cap">Bestellungen pro Stunde</div></div>
-            <div class="kpi"><div class="big">~0</div><div class="cap">Bestellfehler durch klare Tickets</div></div>
+            <div class="kpi"><div class="big">−40%</div><div class="cap">Weniger Wartezeit in der Schlange</div></div>
+            <div class="kpi"><div class="big">+25%</div><div class="cap">Mehr Bestellungen pro Stunde</div></div>
+            <div class="kpi"><div class="big">~0</div><div class="cap">Bestellfehler dank klarer Tickets</div></div>
             <div class="kpi"><div class="big">100%</div><div class="cap">Digitale Auswertung pro Event</div></div>
           </div>
         </div>
@@ -81,9 +83,10 @@
       <div class="container">
         <div class="row between" style="padding-top:var(--s-4)">
           <div>
-            <div class="t-eyebrow" id="menu-event">Fussballmatch</div>
+            <div class="t-eyebrow">Dein Grillmoment</div>
             <div class="row" style="gap:6px;margin-top:2px">
               <strong id="menu-stand" style="font-size:var(--fs-md)">Bell Grillstand</strong>
+              <span class="t-muted" style="font-size:var(--fs-sm)">· <span id="menu-event">Fussballmatch</span></span>
             </div>
           </div>
           <button class="btn btn-soft btn-sm" data-nav="stand">Stand wechseln</button>
@@ -119,10 +122,10 @@
 
   <div class="scrim" id="scrim"></div>
 
-  <div class="sheet" id="sheet-cart" role="dialog" aria-modal="true" aria-label="Warenkorb">
+  <div class="sheet" id="sheet-cart" role="dialog" aria-modal="true" aria-label="Dein Grillmoment">
     <div class="grip"></div>
     <div class="sheet-head">
-      <h3>Dein Warenkorb</h3>
+      <h3>Dein Grillmoment</h3>
       <button class="icon-btn" data-close-sheet aria-label="Schliessen"></button>
     </div>
     <div class="sheet-body" id="cart-body"></div>
@@ -145,16 +148,17 @@
       <a href="index.html">🛒 Gast</a>
       <a href="staff.html">👨‍🍳 Crew / Kasse</a>
       <a href="admin.html">📊 Admin</a>
+      <a href="https://www.bell.ch/de" target="_blank" rel="noopener">Mehr über Bell ↗</a>
     </div>
-    <div style="margin-top:10px">© 2026 Demo für Bell Food Group · nicht offiziell · zu Präsentationszwecken</div>
+    <div style="margin-top:10px">© 2026 Demo für Bell Food Group · nicht offiziell · zu Präsentationszwecken · inspiriert von der Bell BBQ-Welt</div>
   </footer>
 
   <div class="fx-glow" id="fx-glow" aria-hidden="true"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="assets/js/store.js?v=7"></script>
-  <script src="assets/js/ui.js?v=7"></script>
-  <script src="assets/js/app.js?v=7"></script>
-  <script src="assets/js/motion.js?v=7"></script>
+  <script src="assets/js/store.js?v=8"></script>
+  <script src="assets/js/ui.js?v=8"></script>
+  <script src="assets/js/app.js?v=8"></script>
+  <script src="assets/js/motion.js?v=8"></script>
 </body>
 </html>
