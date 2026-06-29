@@ -283,6 +283,11 @@
     const isReady = o.status === 'ready';
     const isDone = o.status === 'done';
 
+    // Special feature: voraussichtliche Wartezeit (live)
+    const showWait = !isReady && !isDone;
+    const aheadActive = BELL.getOrders().filter(x => x.status !== 'done' && x.status !== 'ready' && x.createdAt < o.createdAt).length;
+    const estWait = Math.max(2, aheadActive * 2 + 3);
+
     const timeline = BELL.STATUS.map((st, i) => {
       const cls = i < idx ? 'done' : (i === idx ? 'current' : '');
       const tm = o.statusTimes[st] ? BELL.clock(o.statusTimes[st]) : '';
@@ -309,6 +314,7 @@
         <div class="lbl">Deine Abholnummer</div>
         <div class="no">${esc(o.pickup)}</div>
         <div class="hint">${isDone ? 'Bestellung abgeschlossen – en Guete! 😋' : isReady ? '🎉 Abholbereit! Zeig diese Nummer am ' + esc(o.standName) : 'Zeig diese Nummer beim ' + esc(o.standName)}</div>
+        ${showWait ? `<div style="position:relative;margin-top:12px"><span style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:8px 16px;border-radius:999px;font-weight:800">⏱️ Bereit in ≈ ${estWait} Min</span></div>` : ''}
       </div>
 
       <div class="card pad" style="margin-top:var(--s-5)">
@@ -352,6 +358,7 @@
 
       <div class="stack" style="margin-top:var(--s-6)">
         <button class="btn btn-primary btn-block btn-lg" data-act="new-order">${icon('bag')} Neue Bestellung starten</button>
+        <button class="btn btn-soft btn-block" data-act="reorder" data-id="${o.id}">${icon('refresh')} Diese Bestellung nochmal</button>
         <button class="btn btn-ghost btn-block" data-nav="${view === 'success' ? 'start' : 'track'}">${view === 'success' ? 'Zur Startseite' : 'Zurück zur Übersicht'}</button>
       </div>`;
 
@@ -448,6 +455,16 @@
       case 'pay-now': processPay(); break;
       case 'order-received': BELL.setStatus(id, 'done'); toast('Bestellung abgeschlossen – en Guete!', 'ok'); break;
       case 'new-order': cart = {}; closeSheets(); renderMenu(); show('menu'); toast('Neue Bestellung – Menü ist bereit'); break;
+      case 'reorder': {
+        const ord = BELL.getOrder(id); if (!ord) break;
+        const avail = {}; products().forEach(p => avail[p.id] = true);
+        cart = {}; let n = 0;
+        ord.items.forEach(it => { if (avail[it.id]) { cart[it.id] = (cart[it.id] || 0) + it.qty; n += it.qty; } });
+        closeSheets(); renderMenu(); show('menu');
+        if (n > 0) { renderCart(); openSheet('sheet-cart'); toast('In den Warenkorb übernommen', 'ok'); }
+        else toast('Diese Artikel sind im aktuellen Event nicht verfügbar', 'warn');
+        break;
+      }
       case 'track-open': activeOrderId = id; backTarget = 'track'; renderOrder(id, 'track'); show('track'); break;
       case 'quick-msg': sendMsg(id, a.dataset.text, currentView === 'success' ? 'success' : 'track'); break;
       case 'send-msg': {
