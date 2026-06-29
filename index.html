@@ -12,7 +12,6 @@
 </head>
 <body>
 
-  <!-- ============ APP BAR ============ -->
   <header class="appbar" id="appbar">
     <div class="container inner">
       <a class="bell-logo" href="index.html" aria-label="Bell FastLane Start">
@@ -27,7 +26,6 @@
 
   <main id="app">
 
-    <!-- ============ START ============ -->
     <section id="view-start" class="view">
       <div class="hero">
         <div class="hero-bg" id="hero-bg"></div>
@@ -48,7 +46,6 @@
       </div>
 
       <div class="container">
-        <!-- How it works -->
         <div class="sec-head"><h2>So funktioniert's</h2></div>
         <div class="steps">
           <div class="step"><div class="n">1</div><div><h4>QR-Code scannen</h4><p>Am Bell-Stand oder in der Warteschlange – sofort startklar, ohne App-Installation.</p></div></div>
@@ -57,7 +54,6 @@
           <div class="step"><div class="n">4</div><div><h4>Abholnummer erhalten</h4><p>Live-Status verfolgen und bei der Anzeige der Nummer abholen.</p></div></div>
         </div>
 
-        <!-- USP -->
         <div class="usp">
           <span class="t-eyebrow" style="color:var(--bell-ember-soft)">Der USP</span>
           <h2>Warum Bell FastLane?</h2>
@@ -72,7 +68,6 @@
       </div>
     </section>
 
-    <!-- ============ STAND SELECT ============ -->
     <section id="view-stand" class="view hide">
       <div class="container" style="padding-top:var(--s-5)">
         <button class="btn btn-ghost btn-sm" data-nav="start" style="margin-bottom:var(--s-4)"></button>
@@ -82,7 +77,6 @@
       </div>
     </section>
 
-    <!-- ============ MENU ============ -->
     <section id="view-menu" class="view hide">
       <div class="container">
         <div class="row between" style="padding-top:var(--s-4)">
@@ -103,19 +97,16 @@
       </div>
     </section>
 
-    <!-- ============ SUCCESS / ACTIVE ORDER ============ -->
     <section id="view-success" class="view hide">
       <div class="container" id="success-content" style="padding:var(--s-5) 0 140px"></div>
     </section>
 
-    <!-- ============ TRACK ============ -->
     <section id="view-track" class="view hide">
       <div class="container" style="padding:var(--s-5) 0 140px" id="track-content"></div>
     </section>
 
   </main>
 
-  <!-- ============ STICKY CART BAR ============ -->
   <div class="cartbar" id="cartbar">
     <div class="inner">
       <span class="count" id="cart-count">0</span>
@@ -126,10 +117,8 @@
     </div>
   </div>
 
-  <!-- ============ OVERLAYS ============ -->
   <div class="scrim" id="scrim"></div>
 
-  <!-- Cart sheet -->
   <div class="sheet" id="sheet-cart" role="dialog" aria-modal="true" aria-label="Warenkorb">
     <div class="grip"></div>
     <div class="sheet-head">
@@ -140,7 +129,6 @@
     <div class="sheet-foot" id="cart-foot"></div>
   </div>
 
-  <!-- Payment sheet -->
   <div class="sheet" id="sheet-pay" role="dialog" aria-modal="true" aria-label="Zahlung">
     <div class="grip"></div>
     <div class="sheet-head">
@@ -167,5 +155,6 @@
   <script src="assets/js/store.js"></script>
   <script src="assets/js/ui.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/motion.js"></script>
 </body>
 </html>
