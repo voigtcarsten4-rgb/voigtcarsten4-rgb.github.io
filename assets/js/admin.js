@@ -4,12 +4,21 @@
 (function () {
   'use strict';
   const { el, els, esc, icon, toast } = UI;
-  const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar' };
+  const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar', bon: 'Bell Bon' };
 
   let presenting = false, presentTimer = null;
   let counted = false;
 
   function isToday(ts) { const d = new Date(ts), n = new Date(); return d.toDateString() === n.toDateString(); }
+
+  /* ---------- Betriebsmodus ---------- */
+  function updateModeBtn() {
+    const b = el('#btn-mode'); if (!b) return;
+    const bon = BELL.getSettings().mode === 'bon';
+    b.innerHTML = '<span class="mode-dot"></span>' + (bon ? 'Modus: Bon-System' : 'Modus: Zahlung');
+    b.classList.toggle('btn-primary', bon);
+    b.classList.toggle('btn-soft', !bon);
+  }
 
   /* ---------- Metrics ---------- */
   function renderMetrics() {
@@ -72,11 +81,16 @@
       `<button class="${ev.id === cur ? 'active' : ''}" data-ev="${ev.id}">${esc(ev.name)}</button>`).join('');
     const ev = BELL.currentEvent();
     el('#admin-event-sub').textContent = '📍 ' + ev.name + ' · ' + ev.venue + ', ' + ev.city;
+    const bon = BELL.getSettings().mode === 'bon';
     el('#event-info').innerHTML = `
       <div class="card pad" style="background:var(--surface-2)">
         <div class="row between"><strong>${esc(ev.venue)}, ${esc(ev.city)}</strong><span class="pill">${ev.products.length} Produkte</span></div>
         <p class="t-muted" style="font-size:var(--fs-sm);margin-top:8px">${esc(ev.tagline)}</p>
         <div style="margin-top:10px">${ev.stands.map(s => `<div class="row" style="gap:8px;padding:4px 0;font-size:var(--fs-sm)">${icon('pin')}<span><strong>${esc(s.name)}</strong> · <span class="t-muted">${esc(s.meta)}</span></span></div>`).join('')}</div>
+        <div class="row between" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+          <span style="font-weight:700;font-size:var(--fs-sm)">Betriebsmodus</span>
+          <span class="pill ${bon ? '' : ''}" style="font-weight:800">${bon ? '🎟️ Bon-System' : '💳 Digitale Zahlung'}</span>
+        </div>
       </div>`;
   }
 
@@ -90,7 +104,7 @@
           <strong style="color:var(--bell-red);min-width:48px">${esc(o.pickup)}</strong>
           <span>
             <span style="display:block;font-weight:600;font-size:var(--fs-sm)">${o.items.reduce((s, i) => s + i.qty, 0)} Artikel · ${esc(o.items.map(i => i.qty + '× ' + i.name).join(', '))}</span>
-            <span class="t-muted" style="font-size:var(--fs-xs)">${esc(PAY_LABEL[o.payMethod] || o.payLabel)} · ${BELL.timeAgo(o.createdAt)}${o.source === 'demo' ? ' · Walk-in' : ''}</span>
+            <span class="t-muted" style="font-size:var(--fs-xs)">${(o.payMethod === 'bon' ? '🎟️ ' : '') + esc(PAY_LABEL[o.payMethod] || o.payLabel)} · ${BELL.timeAgo(o.createdAt)}${o.source === 'demo' ? ' · Walk-in' : ''}</span>
           </span>
         </span>
         <span class="row" style="gap:var(--s-3)">
@@ -127,6 +141,7 @@
 
   /* ---------- Full render ---------- */
   function render() {
+    updateModeBtn();
     renderMetrics(); renderTop(); renderStatus(); renderEvents(); renderRecent();
     if (!counted) { counted = true; animateCounts(); }
   }
@@ -140,8 +155,9 @@
     const pool = list.slice().sort(() => Math.random() - 0.5).slice(0, n);
     const items = pool.map(p => ({ id: p.id, name: p.name, price: p.price, qty: 1 + Math.floor(Math.random() * 2) }));
     const sub = items.reduce((s, x) => s + x.price * x.qty, 0);
+    const bon = BELL.getSettings().mode === 'bon';
     const pays = ['twint', 'applepay', 'googlepay', 'card', 'cash'];
-    const pm = pays[Math.floor(Math.random() * pays.length)];
+    const pm = bon ? 'bon' : pays[Math.floor(Math.random() * pays.length)];
     let all = BELL.getOrders();
     if (all.length > 40) { const done = all.filter(o => o.status === 'done').sort((a, b) => a.createdAt - b.createdAt); if (done[0]) { all = all.filter(o => o.id !== done[0].id); localStorage.setItem(BELL.KEYS.orders, JSON.stringify(all)); } }
     BELL.createOrder({ eventId: ev.id, standId: stand.id, standName: stand.name, items, subtotal: sub, total: sub, payMethod: pm, payLabel: PAY_LABEL[pm], source: 'demo' });
@@ -184,6 +200,13 @@
     counted = false;
     render();
     toast('Demo-Daten zurückgesetzt', 'ok');
+  });
+  const mb = el('#btn-mode');
+  if (mb) mb.addEventListener('click', () => {
+    const m = BELL.getSettings().mode === 'bon' ? 'payment' : 'bon';
+    BELL.setSettings({ mode: m });
+    render();
+    toast('Betriebsmodus: ' + (m === 'bon' ? '🎟️ Bon-System' : '💳 Digitale Zahlung'), 'ok', 2000);
   });
 
   BELL.onChange(render);
