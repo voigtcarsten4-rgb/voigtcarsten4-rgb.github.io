@@ -21,7 +21,6 @@
   const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar am Stand', bon: 'Bell Bon' };
   const SYM = { received: 'sym-received', prep: 'sym-prep', grill: 'sym-prep', almost: 'sym-prep', ready: 'sym-pickup', done: 'sym-received' };
   const SH = { received: 'sh-received', prep: 'sh-prep', grill: 'sh-grill', almost: 'sh-almost', ready: 'sh-ready', done: 'sh-done' };
-  const whenLabel = w => w === '10min' ? 'in ~10 Min' : 'sofort';
 
   const isBonMode = () => BELL.getSettings().mode === 'bon';
   const sig = items => (items || []).map(i => i.id + ':' + i.qty).sort().join(',');
@@ -88,7 +87,7 @@
         <div class="welcome">
           <div class="wc-ic">${src.fav ? '★' : '🔥'}</div>
           <div class="wc-tx">
-            <b>${src.fav ? (nm ? nm + 's Favorit' : 'Dein Matchpause-Favorit') : 'Willkommen zurück' + (nm ? ', ' + esc(nm) : '')}</b>
+            <b>${src.fav ? (nm ? esc(nm) + 's Favorit' : 'Dein Matchpause-Favorit') : 'Willkommen zurück' + (nm ? ', ' + esc(nm) : '')}</b>
             <span>${esc(names)}</span>
           </div>
           <button class="btn btn-primary btn-sm" data-act="order-fav">Nochmal</button>
@@ -240,7 +239,7 @@
         : 'Bestellen · ' + BELL.chf(cartTotal())}</button>`;
   }
 
-  /* ---------- Personalisierung (optional, lokal) ---------- */
+  /* ---------- Personalisierung im Checkout ---------- */
   function persoBlock() {
     return `<div class="perso">
       <label class="perso-l">Wie dürfen wir dich aufrufen? <span>(optional)</span></label>
@@ -253,9 +252,9 @@
     </div>`;
   }
   const trustLine = () => `<div class="trust">${icon('check')} <span>Bell Qualität – frisch vorbereitet für deinen Eventmoment.</span></div>`;
-  function capturePerso() { const i = el('#perso-name'); persoName = i ? i.value.trim() : ''; BELL.setName(persoName); }
+  function capturePerso() { const i = el('#perso-name'); persoName = i ? i.value.trim() : (BELL.getName() || ''); BELL.setName(persoName); }
 
-  /* ---------- Payment (Zahlungs-Modus) ---------- */
+  /* ---------- Payment ---------- */
   function openPay() {
     el('#pay-title').textContent = 'Bestellung abschliessen';
     payMethod = null;
@@ -315,7 +314,7 @@
     }, 1750);
   }
 
-  /* ---------- Bon-System-Modus ---------- */
+  /* ---------- Bon-System ---------- */
   function openBon() {
     const total = cartTotal();
     el('#pay-title').textContent = 'Bell Bon erstellen';
@@ -403,7 +402,7 @@
     openSheet('sheet-bell');
   }
 
-  /* ---------- Visueller Bestellablauf (Journey) ---------- */
+  /* ---------- Journey ---------- */
   function flowHtml(o, idx) {
     return `
       <div class="card pad flow">
@@ -450,7 +449,7 @@
       grill: 'Frisch auf dem Grill 🔥',
       almost: 'Gleich fertig – nur noch einen Moment.',
       ready: (nm ? nm + ', komm' : 'Komm') + ' zum ' + o.standName + (isBon ? ', zeig deinen Bon und hol ab!' : ' und zeig deine Nummer!'),
-      done: 'Abgeschlossen – en Guete!' + (nm ? ' 😋' : ' 😋')
+      done: 'Abgeschlossen – en Guete! 😋'
     }[o.status];
 
     const itemsHtml = o.items.map(it =>
@@ -695,6 +694,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
     const t = e.target;
+    if (t && t.id === 'pg-name') { persoGo(); return; }
     if (t && t.id && t.id.indexOf('chat-inp-') === 0 && t.value.trim()) {
       const v = t.id.replace('chat-inp-', '');
       sendMsg(activeOrderId, t.value.trim(), v); t.value = '';
@@ -725,11 +725,40 @@
 
   BELL.onChange(() => { refreshLive(); });
 
-  /* ---------- Intro (1. Besuch, skippbar) ---------- */
+  /* ---------- Personalisierungs-Gate (nach Intro, steuerbar) ---------- */
+  function persoGo() {
+    const v = ((el('#pg-name') || {}).value || '').trim();
+    BELL.setName(v);
+    closePerso();
+    renderStart();
+    toast(v ? ('Willkommen, ' + v + ' 🔥') : 'Los geht\'s – viel Genuss 🔥', 'ok', 1700);
+  }
+  function runPerso(force) {
+    const g = el('#perso-gate'); if (!g) return;
+    let done = false; try { done = !!localStorage.getItem('bellfl_perso_v1'); } catch (e) {}
+    if (done && !force) return;
+    const inp = el('#pg-name'); if (inp) inp.value = BELL.getName() || '';
+    g.classList.remove('out'); g.classList.add('show');
+    setTimeout(() => { try { inp && inp.focus(); } catch (e) {} }, 380);
+  }
+  function closePerso() {
+    const g = el('#perso-gate'); if (!g) return;
+    try { localStorage.setItem('bellfl_perso_v1', '1'); } catch (e) {}
+    g.classList.add('out');
+    setTimeout(() => { g.classList.remove('show'); g.classList.remove('out'); }, 430);
+  }
+  function wirePerso() {
+    const go = el('#pg-go'); if (go) go.addEventListener('click', persoGo);
+    const an = el('#pg-anon'); if (an) an.addEventListener('click', () => { BELL.setName(''); closePerso(); renderStart(); toast('Alles klar – anonym unterwegs', 'ok', 1500); });
+    const bp = el('#btn-perso'); if (bp) bp.addEventListener('click', () => runPerso(true));
+  }
+
+  /* ---------- Intro (1. Besuch, skippbar) → danach Perso-Gate ---------- */
   function runIntro() {
-    const introEl = el('#intro'); if (!introEl) return;
+    const introEl = el('#intro');
     let seen = false; try { seen = !!localStorage.getItem('bellfl_intro_v1'); } catch (e) {}
-    if (seen) { introEl.parentNode && introEl.parentNode.removeChild(introEl); return; }
+    if (!introEl) { runPerso(false); return; }
+    if (seen) { introEl.parentNode && introEl.parentNode.removeChild(introEl); runPerso(false); return; }
     introEl.classList.add('show');
     let done = false;
     const finish = () => {
@@ -737,12 +766,14 @@
       try { localStorage.setItem('bellfl_intro_v1', '1'); } catch (e) {}
       introEl.classList.add('out');
       setTimeout(() => { introEl.parentNode && introEl.parentNode.removeChild(introEl); }, 600);
+      setTimeout(() => runPerso(false), 360);
     };
     introEl.addEventListener('click', finish);
     setTimeout(finish, 2600);
   }
 
   function boot() {
+    wirePerso();
     runIntro();
     renderStart();
     const h = location.hash;
