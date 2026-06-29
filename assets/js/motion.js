@@ -1,8 +1,8 @@
 /* =====================================================================
-   BELL FASTLANE — Premium Motion Layer (motion.js)
-   Atmosphäre, Fly-to-Cart, Animations-Schalter, Mobile-Härtung,
-   Original-Bell-Logo, App-Feel, Status-Screen, Bestellablauf-Journey,
-   Bon-Voucher, Live-Updates. Rein visuell.
+   BELL FASTLANE — Premium Motion Layer (motion.js)  v8
+   Atmosphäre (Glut, Hitze, Rauch, Grilllicht), Fly-to-Cart, Schalter,
+   Mobile-Härtung, Bell-Logo, Status-Journey, Bon-Voucher, USP-Styles.
+   Rein visuell, performant, respektiert „Bewegung reduzieren".
    ===================================================================== */
 (function () {
   'use strict';
@@ -18,25 +18,30 @@
       + '@keyframes fxRise{0%{transform:translate3d(0,0,0) scale(1);opacity:0}12%{opacity:.95}85%{opacity:.5}100%{transform:translate3d(var(--dx),-66vh,0) scale(.35);opacity:0}}'
       + '.fx-heat{position:absolute;left:0;right:0;bottom:0;height:44%;z-index:1;pointer-events:none;background:linear-gradient(0deg,rgba(255,122,26,.13),transparent 72%);mix-blend-mode:screen;animation:fxHeat 5s ease-in-out infinite;will-change:opacity,transform}'
       + '@keyframes fxHeat{0%,100%{opacity:.4;transform:translateY(0)}50%{opacity:.8;transform:translateY(-3px)}}'
+      + '.fx-glow2{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(62% 52% at 50% 90%,rgba(255,138,40,.30),transparent 70%);mix-blend-mode:screen;animation:fxGlow 6s ease-in-out infinite;will-change:opacity}'
+      + '@keyframes fxGlow{0%,100%{opacity:.5}50%{opacity:.92}}'
+      + '.fx-smoke{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}'
+      + '.fx-puff{position:absolute;bottom:4%;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.10),transparent 66%);filter:blur(9px);opacity:0;animation:fxPuff var(--pd) ease-in var(--pdl) infinite;will-change:transform,opacity}'
+      + '@keyframes fxPuff{0%{transform:translateY(0) scale(.7);opacity:0}22%{opacity:.45}100%{transform:translateY(-54vh) scale(1.8);opacity:0}}'
       + '.fx-sweep{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,.10) 46%,rgba(255,255,255,.20) 50%,transparent 64%);transform:translateX(-120%)}'
       + '.fx-fly{position:fixed;z-index:300;pointer-events:none;border-radius:16px;overflow:hidden;box-shadow:0 16px 38px rgba(0,0,0,.38)}'
       + '.fx-fly img,.fx-fly svg{width:100%;height:100%;object-fit:cover;display:block}'
       + '.fx-mtoggle.off{opacity:.5}'
-      + 'body.motion-off .fx-embers,body.motion-off .fx-heat,body.motion-off .fx-sweep{display:none!important}'
+      + 'body.motion-off .fx-embers,body.motion-off .fx-heat,body.motion-off .fx-sweep,body.motion-off .fx-glow2,body.motion-off .fx-smoke{display:none!important}'
       + 'body.motion-off .hero-bg{animation:none!important;transform:scale(1.04)!important}'
       + 'body.motion-off .demo-flag .dot{animation:none!important}'
       + 'body.motion-off .ticket{animation:none!important}'
-      + 'body.motion-off .tl-step.current .dot{animation:none!important}'
-      // ---- Original Bell-Logo statt generischer Wortmarke ----
+      // ---- Original Bell-Logo ----
       + '.bell-mark{background:url("assets/img/bell-logo.svg") center/contain no-repeat!important;color:transparent!important;font-size:0!important;line-height:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;aspect-ratio:200/132;width:auto}'
       + '.bell-mark.sm{height:30px}.bell-mark.md{height:40px}.bell-mark.lg{height:62px}'
-      // ---- App-Feel: rundere, taktilere Elemente ----
+      // ---- App-Feel ----
       + '.card{border-radius:22px}.btn{border-radius:16px}.btn-lg{border-radius:18px}.product{border-radius:20px}.pay-method{border-radius:18px}.metric,.panel,.kds-stat{border-radius:20px}.sheet{border-radius:28px 28px 0 0}'
       + '.btn{transition:transform .12s var(--ease),background .2s,box-shadow .2s}.btn:active{transform:scale(.97)}'
-      + '.product:active{transform:scale(.99)}'
-      // ---- Mobile-Härtung: kein Abschneiden ----
+      + '.product{transition:box-shadow .25s,transform .25s}.product:active{transform:scale(.99)}.product:hover{box-shadow:var(--sh-3)}'
+      + '.menu-cat-title{letter-spacing:-.01em}'
+      // ---- Mobile-Härtung ----
       + '.product .info,.cart-line>div,.ticket,.ticket .items,.metric,.panel,.kpi,.receipt,.row>*{min-width:0}'
-      + '.product .info h3,.product .info .desc,.cart-line .nm{overflow:hidden;text-overflow:ellipsis}'
+      + '.product .info h3,.cart-line .nm{overflow:hidden;text-overflow:ellipsis}'
       + '.ticket .t-foot{flex-wrap:wrap}'
       + '.product .thumb img{transition:transform .5s cubic-bezier(.22,.61,.36,1)}'
       + '.product:hover .thumb img{transform:scale(1.07)}'
@@ -49,7 +54,25 @@
       +   '.hero .inner{min-height:54vh}.metric .v{font-size:var(--fs-xl)}'
       +   '#recent .row span{min-width:0}'
       + '}'
-      // ---- Visueller Status-Screen ----
+      // ---- Welcome-back / Favorit (USP3) ----
+      + '.welcome{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#fff,#fff6f0);border:1px solid var(--line);border-radius:20px;padding:13px 15px;box-shadow:var(--sh-2);margin-top:var(--s-5)}'
+      + '.welcome .wc-ic{width:42px;height:42px;border-radius:12px;background:rgba(226,0,26,.1);color:var(--bell-red);display:grid;place-items:center;font-size:20px;flex:none}'
+      + '.welcome .wc-tx{min-width:0;flex:1}.welcome .wc-tx b{display:block;font-size:var(--fs-sm)}.welcome .wc-tx span{display:block;font-size:var(--fs-xs);color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      // ---- Grill-Moment Story (USP1) ----
+      + '.cl-story{font-size:var(--fs-xs);color:var(--ink-2);font-style:italic;margin:2px 0 4px;line-height:1.35}'
+      // ---- FastLane-Vorteil (USP2) ----
+      + '.fl-advantage{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#FFF6EC,#FFE6CC);border:1px solid #F2C58A;border-radius:16px;padding:12px 14px}'
+      + '.fl-advantage .fl-ic{font-size:22px;flex:none}'
+      + '.fl-advantage b{display:block;font-size:var(--fs-sm);color:#9A4A00}'
+      + '.fl-advantage span{display:block;font-size:var(--fs-xs);color:#B5651D;line-height:1.4}'
+      // ---- Bell Moment / Event-Pass (USP3) ----
+      + '.bell-pass{display:flex;align-items:center;gap:12px;margin-top:var(--s-4);padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#1A1413,#33251f);color:#fff;box-shadow:var(--sh-2)}'
+      + '.bell-pass .bp-l{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}'
+      + '.bell-pass .bp-k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#ffb877;font-weight:800}'
+      + '.bell-pass .bp-no{font-size:21px;font-weight:900;letter-spacing:.02em}'
+      + '.bell-pass .bp-sub{font-size:11px;color:rgba(255,255,255,.72);line-height:1.35}'
+      + '.bell-pass .btn{flex:none}'
+      // ---- Status-Screen ----
       + '.status-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:24px 20px;border-radius:24px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--sh-3)}'
       + '.status-hero .symwrap{width:108px;height:108px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;margin-bottom:4px;box-shadow:0 12px 30px rgba(0,0,0,.18)}'
       + '.status-hero .symwrap img{width:74px;height:74px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.28))}'
@@ -62,11 +85,7 @@
       + '.status-hero.sh-ready .symwrap img{animation:walk 1.05s ease-in-out infinite}'
       + '@keyframes walk{0%,100%{transform:translateX(-3px) rotate(-3deg)}50%{transform:translateX(3px) rotate(3deg)}}'
       + 'body.motion-off .status-hero .symwrap img{animation:none!important}'
-      + '.step-dots{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:14px}'
-      + '.step-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s}'
-      + '.step-dots i.done{background:#fff}'
-      + '.step-dots i.cur{background:#fff;transform:scale(1.7);box-shadow:0 0 0 4px rgba(255,255,255,.25)}'
-      // ---- Bestellablauf (Journey) ----
+      // ---- Journey ----
       + '.flow .flow-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}'
       + '.flow .flow-head h3{font-size:var(--fs-lg)}'
       + '.flow-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.04em}'
@@ -85,51 +104,48 @@
       + '.fs-body{display:flex;flex-direction:column;min-width:0}'
       + '.fs-body b{font-size:var(--fs-md);font-weight:800}'
       + '.fs-body span{font-size:var(--fs-sm);color:var(--ink-2)}'
-      + '.flow-step.todo .fs-body b{color:var(--ink-3)}'
-      + '.flow-step.todo .fs-body span{color:var(--ink-3)}'
+      + '.flow-step.todo .fs-body b{color:var(--ink-3)}.flow-step.todo .fs-body span{color:var(--ink-3)}'
       + '.fs-mark{margin-left:auto;color:var(--success);display:grid;place-items:center;width:24px;height:24px;flex:none}'
       + '.fs-mark svg{width:20px;height:20px}'
       + '.fs-pulse{width:11px;height:11px;border-radius:50%;background:var(--bell-red);animation:lvpulse 1.5s infinite}'
       + 'body.motion-off .flow-step .fs-ico img{animation:none!important}'
       + 'body.motion-off .flow-live .lv-dot,body.motion-off .fs-pulse{animation:none!important}'
-      + '.status-hero.just{animation:pop .6s var(--ease)}'
-      + '.flow-step.just .fs-ico{animation:pop .6s var(--ease)}'
+      + '.status-hero.just{animation:pop .6s var(--ease)}.flow-step.just .fs-ico{animation:pop .6s var(--ease)}'
       + '@keyframes pop{0%{transform:scale(1)}30%{transform:scale(1.14)}100%{transform:scale(1)}}'
       + 'body.motion-off .status-hero.just,body.motion-off .flow-step.just .fs-ico{animation:none!important}'
-      // system message (indirekte Kommunikation Crew → Gast)
       + '.sys-msg{display:block;max-width:92%;text-align:center;background:var(--surface-2);color:var(--ink-2);font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:14px;margin:6px auto;border:1px solid var(--line)}'
       + '.sys-msg .tm{display:block;font-size:10px;color:var(--ink-3);font-weight:500;margin-top:1px}'
-      // crew ticket stage symbol
+      // ---- Crew ----
       + '.t-stage{display:flex;align-items:center;gap:8px;margin:2px 0 4px}'
       + '.tk-sym{width:26px;height:26px;flex:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.15))}'
-      // ---- Crew-Wartezeit-Ampel ----
+      + '.kds-col{border-radius:18px}.kds-col .col-head h3{font-size:var(--fs-md);font-weight:800}'
+      + '.ticket{transition:box-shadow .2s,transform .2s}.ticket:hover{transform:translateY(-1px)}'
+      + '.ticket .note{background:#FFF1DE;border-left:3px solid var(--warn);padding:7px 10px;border-radius:8px}'
       + '.ticket.urge-warn{box-shadow:0 0 0 2px var(--warn),var(--sh-2)}'
       + '.ticket.urge-late{box-shadow:0 0 0 2px var(--bell-red),var(--sh-2);animation:urgePulse 1.7s infinite}'
       + '@keyframes urgePulse{0%{box-shadow:0 0 0 0 rgba(226,0,26,.45),var(--sh-2)}70%{box-shadow:0 0 0 9px rgba(226,0,26,0),var(--sh-2)}100%{box-shadow:0 0 0 0 rgba(226,0,26,0),var(--sh-2)}}'
       + 'body.motion-off .ticket.urge-late{animation:none}'
       + '.wait-badge{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;margin-left:8px}'
-      + '.wait-badge.ok{background:var(--success-bg);color:var(--success)}'
-      + '.wait-badge.warn{background:#FFF1DE;color:var(--warn)}'
-      + '.wait-badge.late{background:rgba(226,0,26,.12);color:var(--bell-red)}'
-      // ---- Bon-System / Voucher ----
+      + '.wait-badge.ok{background:var(--success-bg);color:var(--success)}.wait-badge.warn{background:#FFF1DE;color:var(--warn)}.wait-badge.late{background:rgba(226,0,26,.12);color:var(--bell-red)}'
+      // ---- Admin ----
+      + '.metric{transition:transform .2s,box-shadow .2s}.metric:hover{transform:translateY(-2px);box-shadow:var(--sh-3)}'
+      + '.live-url-chip{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-xs);font-weight:700;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;word-break:break-all}'
+      + '.live-url-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--success)}'
+      // ---- Bon / Voucher ----
       + '.bon-preview{border-radius:18px;overflow:hidden;border:1.5px dashed var(--bell-red);background:linear-gradient(160deg,#fff,#fff6f0)}'
       + '.bon-strip{background:var(--bell-red);color:#fff;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:.06em}'
-      + '.bon-mid{padding:22px 16px;text-align:center}'
-      + '.bon-val{font-size:34px;font-weight:900;color:var(--bell-red);letter-spacing:-.02em}'
-      + '.bon-sub{font-size:13px;color:var(--ink-2);margin-top:2px}'
+      + '.bon-mid{padding:22px 16px;text-align:center}.bon-val{font-size:34px;font-weight:900;color:var(--bell-red);letter-spacing:-.02em}.bon-sub{font-size:13px;color:var(--ink-2);margin-top:2px}'
       + '.bon-note{font-size:12.5px;line-height:1.5;color:var(--ink-2);background:var(--surface-2);padding:12px 16px;border-top:1.5px dashed var(--line-2)}'
       + '.bon-stamp{font-size:62px;line-height:1;animation:stamp .55s var(--ease)}'
       + '@keyframes stamp{0%{transform:scale(2.4) rotate(-16deg);opacity:0}60%{transform:scale(.92) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}'
       + 'body.motion-off .bon-stamp{animation:none}'
       + '.bon-receipt{border:1.5px dashed var(--bell-red)!important;background:linear-gradient(160deg,#fff,#fff7f2)}'
       + '.bon-r-top{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--bell-red)}'
-      + '.bon-r-kicker{color:#fff;font-weight:800;font-size:12px;letter-spacing:.05em}'
-      + '.bon-r-top strong{font-size:20px}'
+      + '.bon-r-kicker{color:#fff;font-weight:800;font-size:12px;letter-spacing:.05em}.bon-r-top strong{font-size:20px}'
       + '.bon-r-no{text-align:center;font-size:40px;font-weight:900;letter-spacing:.05em;color:var(--ink);padding:16px 0 0}'
       + '.bon-r-val{text-align:center;font-size:15px;font-weight:800;color:var(--bell-red);padding:2px 0 14px}'
       + '.bon-perf{height:0;border-top:2px dashed var(--line-2);margin:0 14px}'
-      + '.bon-r-body{padding:14px 20px}'
-      + '.bon-r-body .r-line{display:flex;justify-content:space-between;padding:3px 0;font-size:var(--fs-sm)}'
+      + '.bon-r-body{padding:14px 20px}.bon-r-body .r-line{display:flex;justify-content:space-between;padding:3px 0;font-size:var(--fs-sm)}'
       + '.bon-r-foot{margin:6px 16px 12px;padding:11px;border-radius:12px;text-align:center;font-weight:800;font-size:13px;background:#FFF1DE;color:var(--warn)}'
       + '.bon-r-foot.paid{background:var(--success-bg);color:var(--success)}'
       + '.mode-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:7px;vertical-align:middle}'
@@ -142,7 +158,7 @@
   function apply() { document.body.classList.toggle('motion-off', !on); }
 
   function clearHero() {
-    ['fx-embers', 'fx-heat', 'fx-sweep'].forEach(function (c) {
+    ['fx-embers', 'fx-heat', 'fx-sweep', 'fx-glow2', 'fx-smoke'].forEach(function (c) {
       var n = document.querySelector('.hero .' + c); if (n) n.remove();
     });
   }
@@ -150,7 +166,17 @@
     var hero = document.querySelector('.hero'); if (!hero) return;
     clearHero();
     if (!on) return;
+    var glow = document.createElement('div'); glow.className = 'fx-glow2'; hero.appendChild(glow);
     var heat = document.createElement('div'); heat.className = 'fx-heat'; hero.appendChild(heat);
+    var smoke = document.createElement('div'); smoke.className = 'fx-smoke';
+    for (var k = 0; k < 3; k++) {
+      var pf = document.createElement('span'); pf.className = 'fx-puff';
+      pf.style.left = (12 + Math.random() * 76) + '%';
+      pf.style.setProperty('--pd', (9 + Math.random() * 5).toFixed(1) + 's');
+      pf.style.setProperty('--pdl', (-Math.random() * 9).toFixed(1) + 's');
+      smoke.appendChild(pf);
+    }
+    hero.appendChild(smoke);
     var em = document.createElement('div'); em.className = 'fx-embers';
     for (var i = 0; i < 16; i++) {
       var e = document.createElement('span'); e.className = 'fx-ember';
