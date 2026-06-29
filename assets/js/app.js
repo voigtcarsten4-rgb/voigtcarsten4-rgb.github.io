@@ -16,6 +16,9 @@
   const addMine = (id) => { const m = getMine(); if (m.indexOf(id) < 0) { m.push(id); localStorage.setItem(MINE, JSON.stringify(m)); } };
 
   const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar am Stand' };
+  // Symbol + Farbverlauf je Status (visueller Status-Screen)
+  const SYM = { received: 'sym-received', prep: 'sym-prep', grill: 'sym-prep', almost: 'sym-prep', ready: 'sym-pickup', done: 'sym-received' };
+  const SH = { received: 'sh-received', prep: 'sh-prep', grill: 'sh-grill', almost: 'sh-almost', ready: 'sh-ready', done: 'sh-done' };
 
   function products() { return BELL.eventProducts(); }
   function prod(id) { return BELL.PRODUCTS.find(p => p.id === id); }
@@ -283,20 +286,19 @@
     const isReady = o.status === 'ready';
     const isDone = o.status === 'done';
 
-    // Special feature: voraussichtliche Wartezeit (live)
     const showWait = !isReady && !isDone;
     const aheadActive = BELL.getOrders().filter(x => x.status !== 'done' && x.status !== 'ready' && x.createdAt < o.createdAt).length;
     const estWait = Math.max(2, aheadActive * 2 + 3);
 
-    const timeline = BELL.STATUS.map((st, i) => {
-      const cls = i < idx ? 'done' : (i === idx ? 'current' : '');
-      const tm = o.statusTimes[st] ? BELL.clock(o.statusTimes[st]) : '';
-      return `<div class="tl-step ${cls}">
-        <span class="dot">${icon('check')}</span>
-        <div class="nm">${BELL.STATUS_LABEL[st]}</div>
-        ${tm ? `<div class="tm">${tm} Uhr</div>` : ''}
-      </div>`;
-    }).join('');
+    const subt = {
+      received: 'Wir haben deine Bestellung erhalten.',
+      prep: 'Deine Bestellung wird vorbereitet.',
+      grill: 'Frisch auf dem Grill 🔥',
+      almost: 'Gleich fertig – nur noch einen Moment.',
+      ready: 'Komm zum ' + o.standName + ' und zeig deine Nummer!',
+      done: 'Abgeschlossen – en Guete! 😋'
+    }[o.status];
+    const dots = BELL.STATUS.map((st, i) => `<i class="${i < idx ? 'done' : (i === idx ? 'cur' : '')}"></i>`).join('');
 
     const itemsHtml = o.items.map(it =>
       `<div class="r-line"><span><span class="q">${it.qty}×</span> ${esc(it.name)}</span><span class="num">${BELL.chf(it.price * it.qty)}</span></div>`
@@ -310,20 +312,20 @@
     el(target).innerHTML = `
       ${view === 'track' ? `<button class="btn btn-ghost btn-sm" data-nav="track" style="margin-bottom:var(--s-4)">${icon('arrowLeft')}Alle Bestellungen</button>` : ''}
 
-      <div class="pickup-card">
-        <div class="lbl">Deine Abholnummer</div>
-        <div class="no">${esc(o.pickup)}</div>
-        <div class="hint">${isDone ? 'Bestellung abgeschlossen – en Guete! 😋' : isReady ? '🎉 Abholbereit! Zeig diese Nummer am ' + esc(o.standName) : 'Zeig diese Nummer beim ' + esc(o.standName)}</div>
-        ${showWait ? `<div style="position:relative;margin-top:12px"><span style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:8px 16px;border-radius:999px;font-weight:800">⏱️ Bereit in ≈ ${estWait} Min</span></div>` : ''}
+      <div class="status-hero ${SH[o.status]}">
+        <div class="symwrap"><img src="assets/img/${SYM[o.status]}.svg?v=5" alt="" /></div>
+        <div class="bl">${BELL.STATUS_LABEL[o.status]}</div>
+        <div class="sl">${esc(subt)}</div>
+        <div class="step-dots">${dots}</div>
       </div>
 
-      <div class="card pad" style="margin-top:var(--s-5)">
-        <div class="row between" style="margin-bottom:var(--s-4)">
-          <h3 style="font-size:var(--fs-lg)">Live-Status</h3>
-          <span class="status-pill s-${o.status}">${BELL.STATUS_SHORT[o.status]}</span>
-        </div>
-        <div class="timeline">${timeline}</div>
-        ${isReady ? `<button class="btn btn-primary btn-block btn-lg" data-act="order-received" data-id="${o.id}" style="margin-top:var(--s-4)">${icon('check')} Bestellung erhalten</button>` : ''}
+      <div class="pickup-card" style="margin-top:var(--s-4)">
+        <div class="lbl">Deine Abholnummer</div>
+        <div class="no">${esc(o.pickup)}</div>
+        ${showWait
+          ? `<div style="margin-top:10px"><span style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:8px 16px;border-radius:999px;font-weight:800">⏱️ Bereit in ≈ ${estWait} Min</span></div>`
+          : `<div class="hint">${isDone ? 'Abgeschlossen – en Guete! 😋' : '🎉 Zeig diese Nummer am ' + esc(o.standName)}</div>`}
+        ${isReady ? `<button class="btn btn-block btn-lg" data-act="order-received" data-id="${o.id}" style="margin-top:var(--s-4);background:#fff;color:var(--bell-red)">${icon('check')} Bestellung erhalten</button>` : ''}
       </div>
 
       <div class="card" style="margin-top:var(--s-5);overflow:hidden">
