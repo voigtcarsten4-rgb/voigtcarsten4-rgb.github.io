@@ -1,7 +1,7 @@
 /* =====================================================================
    BELL FASTLANE — Shared Store (Demo)
    localStorage als Demo-"Datenbank", Cross-Tab-Sync, Produktkatalog,
-   Event-Modi, Bestell-/Status-/Chat-Logik, Favoriten.
+   Event-Modi, Bestell-/Status-/Chat-Logik, Favoriten, Personalisierung.
    KEINE echte Zahlung · KEINE echten Kundendaten.
    ===================================================================== */
 (function (global) {
@@ -13,7 +13,8 @@
     seq:      'bellfl_seq_v1',
     seeded:   'bellfl_seeded_v1',
     crewHb:   'bellfl_crew_hb',
-    fav:      'bellfl_fav_v1'
+    fav:      'bellfl_fav_v1',
+    name:     'bellfl_name_v1'
   };
 
   /* ---------- Status flow ---------- */
@@ -68,10 +69,10 @@
 
   /* ---------- Product catalog (CHF, inkl. MwSt) ---------- */
   const PRODUCTS = [
-    { id: 'kloepfer',       name: 'Klöpfer',                  cat: 'grill', price: 6.50, desc: 'Schweizer Cervelat-Klassiker, frisch vom Grill – mit knusprigem Bürli.', story: 'Der Schweizer Klassiker vom Grill – schnell, herzhaft, bereit für den Matchmoment.', tags: ['Klassiker'] },
-    { id: 'joggeli',        name: 'Joggeli-Wurst',            cat: 'grill', price: 6.00, desc: 'Feine Brüh-Spezialität, knackig grilliert.', story: 'Der Stadion-Favorit für Basel-Momente: kräftig, unkompliziert, heiss vom Grill.', tags: [] },
-    { id: 'kalbsbratwurst', name: 'Kalbsbratwurst',           cat: 'grill', price: 7.50, desc: 'St. Galler Art aus zartem Schweizer Kalbfleisch – mit Bürli.', story: 'Fein, mild und hochwertig – die Bell-Bratwurst für klassischen, sauberen Genuss.', tags: ['Beliebt'] },
-    { id: 'schnitzelbrot',  name: 'Schnitzelbrot',            cat: 'snack', price: 9.50, desc: 'Knuspriges Schnitzel im frischen Brot, mit Salat und Sauce.', story: 'Der Sattmacher für Events: knusprig, praktisch, direkt auf die Hand.', tags: ['hot'] },
+    { id: 'kloepfer',       name: 'Klöpfer',                  cat: 'grill', price: 6.50, desc: 'Schweizer Cervelat-Klassiker, frisch vom Grill – mit knusprigem Bürli.', story: 'Der Klassiker vom Grill – herzhaft, heiss und perfekt für die Matchpause.', tags: ['Klassiker'] },
+    { id: 'joggeli',        name: 'Joggeli-Wurst',            cat: 'grill', price: 6.00, desc: 'Feine Brüh-Spezialität, knackig grilliert.', story: 'Der Event-Favorit: kräftig, unkompliziert und frisch vom Grill.', tags: [] },
+    { id: 'kalbsbratwurst', name: 'Kalbsbratwurst',           cat: 'grill', price: 7.50, desc: 'St. Galler Art aus zartem Schweizer Kalbfleisch – mit Bürli.', story: 'Fein, mild und hochwertig – frisch grilliert und direkt auf die Hand.', tags: ['Beliebt'] },
+    { id: 'schnitzelbrot',  name: 'Schnitzelbrot',            cat: 'snack', price: 9.50, desc: 'Knuspriges Schnitzel im frischen Brot, mit Salat und Sauce.', story: 'Knusprig, sättigend und ideal für grosse Eventmomente.', tags: ['hot'] },
     { id: 'sandwich',       name: 'Sandwich',                 cat: 'snack', price: 7.00, desc: 'Frisches Sandwich mit feiner Bell Charcuterie und Salat.', story: 'Frisch belegt mit feiner Bell-Charcuterie – der schnelle Genuss zwischendurch.', tags: [] },
     { id: 'wasser',         name: 'Wasser',                   cat: 'drink', price: 3.50, desc: 'Schweizer Mineralwasser – mit oder ohne Kohlensäure.', story: 'Eiskalt und erfrischend – die Pause zwischendurch.', tags: ['cold'] },
     { id: 'cola',           name: 'Cola / Softdrink',         cat: 'drink', price: 4.00, desc: 'Eisgekühlte Erfrischung in verschiedenen Sorten.', story: 'Eisgekühlte Erfrischung – der Klassiker zum Grillgenuss.', tags: ['cold'] },
@@ -79,7 +80,6 @@
     { id: 'feldi_af',       name: 'Feldschlösschen alkoholfrei', cat: 'beer', price: 5.00, desc: 'Voller Biergenuss, alkoholfrei. Auch für die Fahrer:innen.', story: 'Voller Biergenuss, alkoholfrei – auch für die Fahrer:innen.', tags: ['0.0'] }
   ];
 
-  // Premium-Produktfotos (Leonardo Phoenix, via CDN). Lokale Kopien in assets/img/products/.
   const IMG_BASE = 'https://cdn.leonardo.ai/users/ca700add-e52f-4b37-abf9-34f43a292e67/generations/';
   const IMAGES = {
     kloepfer:       IMG_BASE + '806186d0-914a-4675-953a-78daa8d316f2/segments/1:1:1/Phoenix_09_Premium_advertising_food_photography_a_juicy_grille_0.jpg',
@@ -180,10 +180,12 @@
     catch (e) { return false; }
   }
 
-  /* ---------- Favoriten (leichte Bindung, lokal) ---------- */
+  /* ---------- Favoriten + Name (lokal, datensparsam) ---------- */
   function getFav() { return read(KEYS.fav, null); }
   function setFav(fav) { write(KEYS.fav, fav); }
   function clearFav() { try { localStorage.removeItem(KEYS.fav); } catch (e) {} emit(); }
+  function getName() { try { return localStorage.getItem(KEYS.name) || ''; } catch (e) { return ''; } }
+  function setName(n) { try { if (n) localStorage.setItem(KEYS.name, n); else localStorage.removeItem(KEYS.name); } catch (e) {} }
 
   /* ---------- Settings ---------- */
   function getSettings() {
@@ -226,6 +228,8 @@
       total: data.total,
       payMethod: data.payMethod,
       payLabel: data.payLabel,
+      guestName: data.guestName || '',
+      pickupWhen: data.pickupWhen || 'sofort',
       status: 'received',
       statusTimes: { received: now },
       createdAt: now,
@@ -299,7 +303,7 @@
     const ev = currentEvent();
     const sName = (ev.stands[0] || {}).name || 'Bell Grillstand';
     const P = id => PRODUCTS.find(p => p.id === id);
-    const mk = (pickup, items, status, mins, pay, payLabel, msgs) => {
+    const mk = (pickup, items, status, mins, pay, payLabel, msgs, guestName) => {
       const created = Date.now() - mins * 60000;
       const li = items.map(([id, q]) => { const p = P(id); return { id, name: p.name, price: p.price, qty: q }; });
       const sub = li.reduce((s, x) => s + x.price * x.qty, 0);
@@ -308,17 +312,17 @@
       for (let i = 0; i <= idx; i++) { times[STATUS[i]] = acc; acc += Math.round(mins * 60000 / (idx + 1.5)); }
       return {
         id: uid(), pickup, eventId: ev.id, standId: (ev.stands[0] || {}).id, standName: sName,
-        items: li, subtotal: sub, total: sub, payMethod: pay, payLabel,
+        items: li, subtotal: sub, total: sub, payMethod: pay, payLabel, guestName: guestName || '', pickupWhen: 'sofort',
         status, statusTimes: times, createdAt: created,
         messages: msgs || [], unreadStaff: (msgs || []).filter(m => m.from === 'guest' && !m.read).length, unreadGuest: 0,
         source: 'demo'
       };
     };
     const orders = [
-      mk('B-101', [['kloepfer', 2], ['feldi', 1]], 'grill', 7, 'twint', 'TWINT', []),
-      mk('B-102', [['kalbsbratwurst', 1], ['cola', 1]], 'ready', 11, 'applepay', 'Apple Pay', []),
+      mk('B-101', [['kloepfer', 2], ['feldi', 1]], 'grill', 7, 'twint', 'TWINT', [], 'Sandra'),
+      mk('B-102', [['kalbsbratwurst', 1], ['cola', 1]], 'ready', 11, 'applepay', 'Apple Pay', [], ''),
       mk('B-103', [['schnitzelbrot', 1], ['feldi_af', 1]], 'received', 2, 'card', 'Kreditkarte',
-         [{ from: 'guest', text: 'Bitte ohne Zwiebeln 🙏', ts: Date.now() - 90000, read: false }])
+         [{ from: 'guest', text: 'Bitte ohne Zwiebeln 🙏', ts: Date.now() - 90000, read: false }], 'Marco')
     ];
     write(KEYS.seq, 104);
     write(KEYS.orders, orders);
@@ -343,8 +347,8 @@
 
   /* ---------- Quick messages ---------- */
   const QUICK_MSGS = [
-    'Ohne Zwiebeln', 'Ohne Senf', 'Bitte etwas später', 'Wo finde ich den Stand?',
-    'Ich bin direkt vorne beim Bell-Wagen', 'Kann ich noch etwas ergänzen?'
+    'Ohne Senf', 'Ohne Brot', 'Bitte 5 Minuten später', 'Wo ist die Ausgabe?',
+    'Ich bin gleich da', 'Kann ich noch etwas ergänzen?'
   ];
 
   /* ---------- Expose ---------- */
@@ -356,7 +360,7 @@
     getOrders, getOrder, createOrder, setStatus, advanceStatus,
     addMessage, markRead, resetDemo, seed,
     setCrewActive, isCrewActive,
-    getFav, setFav, clearFav,
+    getFav, setFav, clearFav, getName, setName,
     onChange, chf, timeAgo, clock, minsAgo
   };
 
