@@ -1,0 +1,12 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Abholbereit">
+  <g fill="#5FB52A" transform="rotate(-7 60 64)">
+    <rect x="45" y="11" width="26" height="13" rx="4"/>
+    <ellipse cx="58" cy="24" rx="30" ry="5.5"/>
+    <circle cx="59" cy="34" r="11.5"/>
+    <path d="M49 45 q10 -4 20 0 l5 25 q-15 5 -30 0 Z"/>
+    <path d="M68 49 l27 -3 a5.5 5.5 0 0 1 .6 11 l-27 1 Z"/>
+    <path d="M50 50 l-17 7 a5.5 5.5 0 0 0 4 10 l18 -6 Z"/>
+    <path d="M60 68 l22 14 a6 6 0 0 1 -6 10 l-24 -16 Z"/>
+    <path d="M52 69 l-18 16 a6 6 0 0 0 8 9 l18 -17 Z"/>
+  </g>
+</svg>
