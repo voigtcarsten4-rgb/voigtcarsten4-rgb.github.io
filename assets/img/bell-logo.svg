@@ -1,0 +1,6 @@
+<svg viewBox="0 0 200 132" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bell">
+  <ellipse cx="100" cy="66" rx="97" ry="62" fill="#ffffff"/>
+  <ellipse cx="100" cy="66" rx="92" ry="57" fill="#E2001A"/>
+  <ellipse cx="100" cy="95" rx="46" ry="14" fill="#6BB539"/>
+  <text x="101" y="82" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="64" fill="#ffffff" text-anchor="middle" stroke="#ffffff" stroke-width="1.2">Bell</text>
+</svg>
