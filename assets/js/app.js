@@ -10,16 +10,17 @@
   let activeOrderId = null;
   let currentView = 'start';
   let backTarget = 'start';
-  const lastIdxById = {}; // für Live-Status-Update-Erkennung
+  const lastIdxById = {};
 
   const MINE = 'bellfl_mine_v1';
   const getMine = () => { try { return JSON.parse(localStorage.getItem(MINE)) || []; } catch (e) { return []; } };
   const addMine = (id) => { const m = getMine(); if (m.indexOf(id) < 0) { m.push(id); localStorage.setItem(MINE, JSON.stringify(m)); } };
 
-  const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar am Stand' };
-  // Symbol + Farbverlauf je Status (visueller Status-Screen)
+  const PAY_LABEL = { twint: 'TWINT', applepay: 'Apple Pay', googlepay: 'Google Pay', card: 'Kreditkarte', cash: 'Bar am Stand', bon: 'Bell Bon' };
   const SYM = { received: 'sym-received', prep: 'sym-prep', grill: 'sym-prep', almost: 'sym-prep', ready: 'sym-pickup', done: 'sym-received' };
   const SH = { received: 'sh-received', prep: 'sh-prep', grill: 'sh-grill', almost: 'sh-almost', ready: 'sh-ready', done: 'sh-done' };
+
+  const isBonMode = () => BELL.getSettings().mode === 'bon';
 
   function products() { return BELL.eventProducts(); }
   function prod(id) { return BELL.PRODUCTS.find(p => p.id === id); }
@@ -195,11 +196,17 @@
         <div class="ln grand"><span>Total</span><span class="num">${BELL.chf(cartTotal())}</span></div>
       </div>`;
 
+    const bon = isBonMode();
     foot.innerHTML = `
-      <div class="demo-note" style="margin-bottom:12px">${icon('info')}<span>Demo-Version – im nächsten Schritt wird keine echte Zahlung ausgelöst.</span></div>
-      <button class="btn btn-primary btn-block btn-lg" data-act="checkout">Zur Demo-Zahlung · ${BELL.chf(cartTotal())}</button>`;
+      <div class="demo-note" style="margin-bottom:12px">${icon('info')}<span>${bon
+        ? 'Bon-Modus – du erhältst einen digitalen Bell-Bon und zahlst am Stand (Bar / Festival-Bons).'
+        : 'Demo-Version – im nächsten Schritt wird keine echte Zahlung ausgelöst.'}</span></div>
+      <button class="btn btn-primary btn-block btn-lg" data-act="checkout">${bon
+        ? '🎟️ Bon erstellen · ' + BELL.chf(cartTotal())
+        : 'Zur Demo-Zahlung · ' + BELL.chf(cartTotal())}</button>`;
   }
 
+  /* ---------- Payment (Zahlungs-Modus) ---------- */
   function openPay() {
     el('#pay-title').textContent = 'Zahlung wählen';
     payMethod = null;
@@ -253,11 +260,53 @@
           <p class="t-muted" style="margin-top:6px">${esc(PAY_LABEL[payMethod])} · <span class="num">${BELL.chf(total)}</span></p>
         </div>`;
       buzz(24);
-      setTimeout(finalizeOrder, 950);
+      setTimeout(() => finalizeOrder(payMethod), 950);
     }, 1750);
   }
 
-  function finalizeOrder() {
+  /* ---------- Bon-System-Modus ---------- */
+  function openBon() {
+    const total = cartTotal();
+    el('#pay-title').textContent = 'Bell Bon erstellen';
+    el('#pay-body').innerHTML = `
+      <div class="bon-preview">
+        <div class="bon-strip">🎟️ BELL BON · DEMO</div>
+        <div class="bon-mid">
+          <div class="bon-val">${BELL.chf(total)}</div>
+          <div class="bon-sub">Einlösbar am Bell-Stand</div>
+        </div>
+        <div class="bon-note">Im Bon-System zahlst du <strong>nicht digital</strong>. Du bekommst einen digitalen Bon mit Abholnummer und löst ihn am Stand ein – bar oder mit Festival-Bons.</div>
+      </div>`;
+    el('#pay-foot').innerHTML = `<button class="btn btn-primary btn-block btn-lg" data-act="bon-create">🎟️ Bon erstellen · ${BELL.chf(total)}</button>`;
+    openSheet('sheet-pay');
+  }
+
+  function processBon() {
+    const total = cartTotal();
+    el('#pay-foot').innerHTML = '';
+    el('#pay-title').textContent = 'Bell Bon';
+    el('#pay-body').innerHTML = `
+      <div class="pay-stage">
+        <div class="bon-stamp">🎟️</div>
+        <h3>Bon wird erstellt…</h3>
+        <p class="t-muted" style="margin-top:6px">Einlösbar am Stand · ${BELL.chf(total)}</p>
+      </div>`;
+    buzz(18);
+    setTimeout(() => {
+      el('#pay-body').innerHTML = `
+        <div class="pay-stage">
+          <div class="pay-check">
+            <svg viewBox="0 0 52 52" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path class="draw" d="M14 27l8 8 16-18"/></svg>
+          </div>
+          <h3>Bell Bon erstellt</h3>
+          <p class="t-muted" style="margin-top:6px">Zeig den Bon am Stand vor · <span class="num">${BELL.chf(total)}</span></p>
+        </div>`;
+      buzz(24);
+      setTimeout(() => finalizeOrder('bon'), 950);
+    }, 1500);
+  }
+
+  function finalizeOrder(method) {
     const ev = BELL.currentEvent();
     const s = BELL.getSettings();
     const stand = (ev.stands.find(x => x.id === s.standId)) || ev.stands[0];
@@ -265,9 +314,10 @@
       const p = prod(id); return { id, name: p.name, price: p.price, qty: cart[id] };
     });
     const subtotal = cartTotal();
+    const pm = method || payMethod || 'card';
     const order = BELL.createOrder({
       eventId: ev.id, standId: stand.id, standName: stand.name,
-      items, subtotal, total: subtotal, payMethod, payLabel: PAY_LABEL[payMethod]
+      items, subtotal, total: subtotal, payMethod: pm, payLabel: PAY_LABEL[pm]
     });
     addMine(order.id);
     cart = {}; payMethod = null;
@@ -275,7 +325,7 @@
     activeOrderId = order.id; backTarget = 'start';
     renderOrder(order.id, 'success');
     show('success');
-    toast('Bestellung ' + order.pickup + ' aufgegeben', 'ok');
+    toast((pm === 'bon' ? 'Bon ' : 'Bestellung ') + order.pickup + ' erstellt', 'ok');
     buzz(30);
   }
 
@@ -307,6 +357,7 @@
     const idx = BELL.STATUS.indexOf(o.status);
     const isReady = o.status === 'ready';
     const isDone = o.status === 'done';
+    const isBon = o.payMethod === 'bon';
 
     const prev = lastIdxById[o.id];
     const justAdvanced = (typeof prev === 'number' && idx > prev);
@@ -321,7 +372,7 @@
       prep: 'Deine Bestellung wird vorbereitet.',
       grill: 'Frisch auf dem Grill 🔥',
       almost: 'Gleich fertig – nur noch einen Moment.',
-      ready: 'Komm zum ' + o.standName + ' und zeig deine Nummer!',
+      ready: (isBon ? 'Komm zum ' + o.standName + ', zeig deinen Bon und hol ab!' : 'Komm zum ' + o.standName + ' und zeig deine Nummer!'),
       done: 'Abgeschlossen – en Guete! 😋'
     }[o.status];
 
@@ -334,27 +385,16 @@
       return `<div class="bubble ${m.from === 'guest' ? 'me' : 'them'}">${esc(m.text)}<span class="tm">${m.from === 'guest' ? 'Du' : 'Bell-Crew'} · ${BELL.clock(m.ts)}</span></div>`;
     }).join('') || `<div class="t-muted center" style="font-size:var(--fs-sm);padding:8px">Noch keine Nachrichten. Schreib der Crew bei Sonderwünschen.</div>`;
 
-    const target = view === 'success' ? '#success-content' : '#track-content';
-    el(target).innerHTML = `
-      ${view === 'track' ? `<button class="btn btn-ghost btn-sm" data-nav="track" style="margin-bottom:var(--s-4)">${icon('arrowLeft')}Alle Bestellungen</button>` : ''}
-
-      <div class="status-hero ${SH[o.status]}">
-        <div class="symwrap"><img src="assets/img/${SYM[o.status]}.svg?v=6" alt="" /></div>
-        <div class="bl">${BELL.STATUS_LABEL[o.status]}</div>
-        <div class="sl">${esc(subt)}</div>
-      </div>
-
-      <div class="pickup-card" style="margin-top:var(--s-4)">
-        <div class="lbl">Deine Abholnummer</div>
-        <div class="no">${esc(o.pickup)}</div>
-        ${showWait
-          ? `<div style="margin-top:10px"><span style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:8px 16px;border-radius:999px;font-weight:800">⏱️ Bereit in ≈ ${estWait} Min</span></div>`
-          : `<div class="hint">${isDone ? 'Abgeschlossen – en Guete! 😋' : '🎉 Zeig diese Nummer am ' + esc(o.standName)}</div>`}
-        ${isReady ? `<button class="btn btn-block btn-lg" data-act="order-received" data-id="${o.id}" style="margin-top:var(--s-4);background:#fff;color:var(--bell-red)">${icon('check')} Bestellung erhalten</button>` : ''}
-      </div>
-
-      ${flowHtml(o, idx)}
-
+    const receiptCard = isBon ? `
+      <div class="card bon-receipt" style="margin-top:var(--s-5);overflow:hidden">
+        <div class="bon-r-top"><span class="bon-r-kicker">🎟️ BELL BON · DEMO</span><strong style="color:#fff;font-style:italic;font-family:Georgia,'Times New Roman',serif">Bell</strong></div>
+        <div class="bon-r-no">${esc(o.pickup)}</div>
+        <div class="bon-r-val">Wert: ${BELL.chf(o.total)}</div>
+        <div class="bon-perf"></div>
+        <div class="bon-r-body">${itemsHtml}</div>
+        <div class="bon-r-foot ${isDone ? 'paid' : ''}">${isDone ? '✅ Bon eingelöst · am Stand bezahlt' : '⏳ Offen – Bon am Stand vorweisen & einlösen'}</div>
+        <div class="r-meta" style="padding:0 20px 16px">Bon-Nr. ${esc(o.pickup)} · ${new Date(o.createdAt).toLocaleString('de-CH')} · Demo-Bon, kein Zahlungsmittel.</div>
+      </div>` : `
       <div class="card" style="margin-top:var(--s-5);overflow:hidden">
         <div class="receipt">
           <div class="r-head">
@@ -371,7 +411,30 @@
             <div class="r-meta">Beleg-Nr. ${esc(o.pickup)} · ${new Date(o.createdAt).toLocaleString('de-CH')} · Demo-Beleg, keine echte Zahlung.</div>
           </div>
         </div>
+      </div>`;
+
+    const target = view === 'success' ? '#success-content' : '#track-content';
+    el(target).innerHTML = `
+      ${view === 'track' ? `<button class="btn btn-ghost btn-sm" data-nav="track" style="margin-bottom:var(--s-4)">${icon('arrowLeft')}Alle Bestellungen</button>` : ''}
+
+      <div class="status-hero ${SH[o.status]}">
+        <div class="symwrap"><img src="assets/img/${SYM[o.status]}.svg?v=6" alt="" /></div>
+        <div class="bl">${BELL.STATUS_LABEL[o.status]}</div>
+        <div class="sl">${esc(subt)}</div>
       </div>
+
+      <div class="pickup-card" style="margin-top:var(--s-4)">
+        <div class="lbl">${isBon ? 'Dein Bon · Abholnummer' : 'Deine Abholnummer'}</div>
+        <div class="no">${esc(o.pickup)}</div>
+        ${showWait
+          ? `<div style="margin-top:10px"><span style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:8px 16px;border-radius:999px;font-weight:800">⏱️ Bereit in ≈ ${estWait} Min</span></div>`
+          : `<div class="hint">${isDone ? 'Abgeschlossen – en Guete! 😋' : (isBon ? '🎟️ Zeig diesen Bon am ' + esc(o.standName) : '🎉 Zeig diese Nummer am ' + esc(o.standName))}</div>`}
+        ${isReady ? `<button class="btn btn-block btn-lg" data-act="order-received" data-id="${o.id}" style="margin-top:var(--s-4);background:#fff;color:var(--bell-red)">${icon('check')} ${isBon ? 'Bon eingelöst & erhalten' : 'Bestellung erhalten'}</button>` : ''}
+      </div>
+
+      ${flowHtml(o, idx)}
+
+      ${receiptCard}
 
       <div class="card pad" style="margin-top:var(--s-5)">
         <div class="row" style="gap:8px;margin-bottom:var(--s-3)">${icon('chat')}<h3 style="font-size:var(--fs-lg)">Nachricht an die Crew</h3></div>
@@ -393,7 +456,6 @@
 
     const log = el('#chat-log-' + view); if (log) log.scrollTop = log.scrollHeight;
 
-    // Live-Update: Crew (oder Auto-Pilot) hat den Status vorangebracht
     if (justAdvanced) {
       const c = el(target);
       const hero = c && c.querySelector('.status-hero');
@@ -422,7 +484,7 @@
         <span class="row" style="gap:var(--s-4)">
           <span style="font-size:var(--fs-2xl);font-weight:900;letter-spacing:-.02em;color:var(--bell-red)">${esc(o.pickup)}</span>
           <span>
-            <span style="display:block;font-weight:700">${o.items.reduce((s, i) => s + i.qty, 0)} Artikel · ${BELL.chf(o.total)}</span>
+            <span style="display:block;font-weight:700">${o.items.reduce((s, i) => s + i.qty, 0)} Artikel · ${BELL.chf(o.total)}${o.payMethod === 'bon' ? ' · 🎟️ Bon' : ''}</span>
             <span class="t-muted" style="font-size:var(--fs-sm)">${esc(o.standName)} · ${BELL.timeAgo(o.createdAt)}</span>
           </span>
         </span>
@@ -463,7 +525,6 @@
   }
 
   // Auto-Pilot: bringt Bestellungen automatisch voran – ABER nur, wenn KEINE Crew aktiv ist.
-  // Sobald die Crew-Ansicht offen ist, steuert ausschliesslich die Crew (echtes Zusammenspiel).
   const AUTO = { received: 8, prep: 12, grill: 16, almost: 10 };
   function autoTick() {
     if (!BELL.isCrewActive()) {
@@ -495,10 +556,11 @@
       case 'remove': delete cart[id]; refreshProductRow(id); updateCartBar(); renderCart(); break;
       case 'cat': { const n = el('#cat-' + a.dataset.cat); if (n) n.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
       case 'pick-stand': BELL.setSettings({ standId: id }); renderMenu(); show('menu'); break;
-      case 'checkout': closeSheets(); setTimeout(openPay, 180); break;
+      case 'checkout': closeSheets(); setTimeout(() => { (isBonMode() ? openBon : openPay)(); }, 180); break;
       case 'pay-select': selectPay(a.dataset.method); break;
       case 'pay-now': processPay(); break;
-      case 'order-received': BELL.setStatus(id, 'done'); toast('Bestellung abgeschlossen – en Guete!', 'ok'); break;
+      case 'bon-create': processBon(); break;
+      case 'order-received': BELL.setStatus(id, 'done'); toast('Abgeschlossen – en Guete!', 'ok'); break;
       case 'new-order': cart = {}; closeSheets(); renderMenu(); show('menu'); toast('Neue Bestellung – Menü ist bereit'); break;
       case 'reorder': {
         const ord = BELL.getOrder(id); if (!ord) break;
