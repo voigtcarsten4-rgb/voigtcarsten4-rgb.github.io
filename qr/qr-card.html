@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#E2001A" />
   <title>Bell FastLane · QR-Karte</title>
   <link rel="icon" href="../assets/img/favicon.svg" />
-  <link rel="stylesheet" href="../assets/css/bell.css" />
+  <link rel="stylesheet" href="../assets/css/bell.css?v=8" />
   <style>
     body { background: var(--bg-2); display: flex; flex-direction: column; align-items: center; padding: var(--s-6) var(--s-4); min-height: 100vh; }
     .toolbar { display: flex; gap: 10px; margin-bottom: var(--s-5); }
@@ -19,9 +19,9 @@
                   linear-gradient(160deg, #2a0a08 0%, #7E0010 40%, var(--bell-red) 100%);
       color: #fff; padding: 28px 26px 22px; text-align: center;
     }
-    .qr-card .top .bell-mark { margin: 0 auto 12px; }
-    .qr-card .top h1 { font-size: 26px; }
-    .qr-card .top p { opacity: .92; margin-top: 6px; font-size: 14px; }
+    .qr-card .top .logo { height: 56px; background:#fff; padding:8px 14px; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,.2); }
+    .qr-card .top h1 { font-size: 26px; margin-top: 14px; }
+    .qr-card .top p { opacity: .95; margin-top: 6px; font-size: 14px; font-weight:600; letter-spacing:.01em; }
     .qr-card .qrwrap { padding: 26px; text-align: center; }
     .qr-card .qrwrap .frame { width: 240px; height: 240px; margin: 0 auto; padding: 14px; background:#fff; border: 3px solid var(--ink); border-radius: 20px; }
     .qr-card .qrwrap .frame svg { width: 100%; height: 100%; display:block; }
@@ -35,6 +35,7 @@
     @media print {
       body { background: #fff; padding: 0; }
       .qr-card { box-shadow: none; border: 1px solid #ccc; }
+      .toolbar { display: none; }
       @page { margin: 12mm; }
     }
   </style>
@@ -47,9 +48,9 @@
 
   <div class="qr-card">
     <div class="top">
-      <span class="bell-mark lg">Bell</span>
-      <h1>Vorbestellen &amp; Abholen</h1>
-      <p>Keine Schlange. Frisch vom Grill. In Sekunden bestellt.</p>
+      <img class="logo" src="../assets/img/bell-logo.svg" alt="Bell" />
+      <h1>Bell FastLane</h1>
+      <p>Scannen. Bestellen. Abholen.</p>
     </div>
     <div class="qrwrap">
       <div class="frame" id="qr"></div>
@@ -60,10 +61,10 @@
       </div>
     </div>
     <div class="url" id="url"></div>
-    <div class="foot">Bell FastLane · <b>Interne Demo / Prototyp</b> · keine echte Zahlung</div>
+    <div class="foot">Bell FastLane Demo · <b>Keine echte Zahlung – interner Prototyp</b></div>
   </div>
 
-  <script src="../assets/js/store.js"></script>
+  <script src="../assets/js/store.js?v=8"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script>
     (function () {
