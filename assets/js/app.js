@@ -21,6 +21,7 @@
   const SH = { received: 'sh-received', prep: 'sh-prep', grill: 'sh-grill', almost: 'sh-almost', ready: 'sh-ready', done: 'sh-done' };
 
   const isBonMode = () => BELL.getSettings().mode === 'bon';
+  const sig = items => (items || []).map(i => i.id + ':' + i.qty).sort().join(',');
 
   function products() { return BELL.eventProducts(); }
   function prod(id) { return BELL.PRODUCTS.find(p => p.id === id); }
@@ -65,8 +66,31 @@
     const stand = (ev.stands.find(x => x.id === s.standId)) || ev.stands[0];
     el('#hero-event').textContent = ev.name;
     el('#hero-stand').textContent = '📍 ' + stand.name + ' · ' + ev.venue + ', ' + ev.city;
-    el('#hero-kicker').innerHTML = '🔥 Bell Grill &amp; Event';
+    el('#hero-kicker').innerHTML = '🔥 Bell BBQ &amp; Event';
     const hb = el('#hero-bg'); if (hb && BELL.HERO) hb.style.backgroundImage = 'url("' + BELL.HERO + '")';
+    renderWelcomeBack();
+  }
+
+  // USP3: leichte Bindung – Favorit / zuletzt bestellt prominent zum erneuten Bestellen
+  function renderWelcomeBack() {
+    const wb = el('#welcome-back'); if (!wb) return;
+    const fav = BELL.getFav();
+    const mine = getMine().map(id => BELL.getOrder(id)).filter(Boolean).sort((a, b) => b.createdAt - a.createdAt);
+    const last = mine[0];
+    const src = fav ? { fav: true, items: fav.items } : (last ? { fav: false, items: last.items } : null);
+    if (!src || !src.items || !src.items.length) { wb.innerHTML = ''; return; }
+    const names = src.items.map(i => i.qty + '× ' + i.name).join(', ');
+    wb.innerHTML = `
+      <div class="container">
+        <div class="welcome">
+          <div class="wc-ic">${src.fav ? '★' : '🔥'}</div>
+          <div class="wc-tx">
+            <b>${src.fav ? 'Dein Matchpause-Favorit' : 'Willkommen zurück'}</b>
+            <span>${esc(names)}</span>
+          </div>
+          <button class="btn btn-primary btn-sm" data-act="order-fav">Nochmal</button>
+        </div>
+      </div>`;
   }
 
   function renderStands() {
@@ -117,10 +141,10 @@
       <div class="menu-grid">
         ${list.filter(p => p.cat === c.id).map(p => `
           <div class="product" data-id="${p.id}">
-            <div class="thumb">${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" loading="lazy">` : p.art}</div>
+            <div class="thumb">${p.img ? `<img src="${p.img}" alt="${esc(p.name)} – frisch vom Bell-Grill" loading="lazy">` : p.art}</div>
             <div class="info">
               <h3>${esc(p.name)}</h3>
-              <div class="desc">${esc(p.desc)}</div>
+              <div class="desc">${esc(p.story || p.desc)}</div>
               <div class="tags">${(p.tags || []).map(tagHtml).join('')}</div>
             </div>
             <div class="buy">
@@ -167,7 +191,7 @@
     const body = el('#cart-body'), foot = el('#cart-foot');
     if (!ids.length) {
       body.innerHTML = `<div class="center t-muted" style="padding:var(--s-7) 0">
-        <div style="font-size:42px">🛒</div><p style="margin-top:8px">Dein Warenkorb ist leer.</p></div>`;
+        <div style="font-size:42px">🔥</div><p style="margin-top:8px">Noch nichts auf dem Grill – wähle deinen Grillmoment.</p></div>`;
       foot.innerHTML = `<button class="btn btn-ghost btn-block" data-close-sheet>Weiter auswählen</button>`;
       return;
     }
@@ -177,7 +201,7 @@
         <div class="thumb">${p.img ? `<img src="${p.img}" alt="${esc(p.name)}" loading="lazy">` : p.art}</div>
         <div>
           <div class="nm">${esc(p.name)}</div>
-          <div class="ea">${BELL.chf(p.price)} / Stück</div>
+          <div class="cl-story">${esc(p.story || p.desc)}</div>
           <button class="rm" data-act="remove" data-id="${id}">Entfernen</button>
         </div>
         <div style="text-align:right">
@@ -196,14 +220,21 @@
         <div class="ln grand"><span>Total</span><span class="num">${BELL.chf(cartTotal())}</span></div>
       </div>`;
 
+    // USP2: FastLane-Live-Vorteil
+    const ahead = BELL.getOrders().filter(o => o.status !== 'done' && o.status !== 'ready').length;
+    const saved = Math.max(3, cartCount() * 2 + ahead * 2);
     const bon = isBonMode();
     foot.innerHTML = `
-      <div class="demo-note" style="margin-bottom:12px">${icon('info')}<span>${bon
-        ? 'Bon-Modus – du erhältst einen digitalen Bell-Bon und zahlst am Stand (Bar / Festival-Bons).'
-        : 'Demo-Version – im nächsten Schritt wird keine echte Zahlung ausgelöst.'}</span></div>
+      <div class="fl-advantage">
+        <span class="fl-ic">⚡</span>
+        <div><b>FastLane-Vorteil</b><span>Du sparst ca. ${saved} Min Anstehen – wir bereiten frisch vor, während du unterwegs bist.</span></div>
+      </div>
+      <div class="demo-note" style="margin:10px 0 12px">${icon('info')}<span>${bon
+        ? 'Bon-Modus – du erhältst einen digitalen Bell-Bon und zahlst am Stand.'
+        : 'Demo – im nächsten Schritt wird keine echte Zahlung ausgelöst.'}</span></div>
       <button class="btn btn-primary btn-block btn-lg" data-act="checkout">${bon
         ? '🎟️ Bon erstellen · ' + BELL.chf(cartTotal())
-        : 'Zur Demo-Zahlung · ' + BELL.chf(cartTotal())}</button>`;
+        : 'Bestellen · ' + BELL.chf(cartTotal())}</button>`;
   }
 
   /* ---------- Payment (Zahlungs-Modus) ---------- */
@@ -256,8 +287,8 @@
           <div class="pay-check">
             <svg viewBox="0 0 52 52" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path class="draw" d="M14 27l8 8 16-18"/></svg>
           </div>
-          <h3>${payMethod === 'cash' ? 'Bestellung aufgenommen' : 'Zahlung erfolgreich'}</h3>
-          <p class="t-muted" style="margin-top:6px">${esc(PAY_LABEL[payMethod])} · <span class="num">${BELL.chf(total)}</span></p>
+          <h3>Bestellung bestätigt</h3>
+          <p class="t-muted" style="margin-top:6px">Dein Bell-Moment ist auf dem Grill · ${esc(PAY_LABEL[payMethod])} · <span class="num">${BELL.chf(total)}</span></p>
         </div>`;
       buzz(24);
       setTimeout(() => finalizeOrder(payMethod), 950);
@@ -299,7 +330,7 @@
             <svg viewBox="0 0 52 52" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path class="draw" d="M14 27l8 8 16-18"/></svg>
           </div>
           <h3>Bell Bon erstellt</h3>
-          <p class="t-muted" style="margin-top:6px">Zeig den Bon am Stand vor · <span class="num">${BELL.chf(total)}</span></p>
+          <p class="t-muted" style="margin-top:6px">Dein Bell-Moment ist auf dem Grill – zeig den Bon am Stand · <span class="num">${BELL.chf(total)}</span></p>
         </div>`;
       buzz(24);
       setTimeout(() => finalizeOrder('bon'), 950);
@@ -325,7 +356,7 @@
     activeOrderId = order.id; backTarget = 'start';
     renderOrder(order.id, 'success');
     show('success');
-    toast((pm === 'bon' ? 'Bon ' : 'Bestellung ') + order.pickup + ' erstellt', 'ok');
+    toast((pm === 'bon' ? 'Bon ' : 'Bestellung ') + order.pickup + ' · dein Bell-Moment läuft', 'ok');
     buzz(30);
   }
 
@@ -358,6 +389,8 @@
     const isReady = o.status === 'ready';
     const isDone = o.status === 'done';
     const isBon = o.payMethod === 'bon';
+    const fav = BELL.getFav();
+    const isFav = !!(fav && sig(fav.items) === sig(o.items));
 
     const prev = lastIdxById[o.id];
     const justAdvanced = (typeof prev === 'number' && idx > prev);
@@ -430,6 +463,11 @@
           ? `<div style="margin-top:10px"><span style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:8px 16px;border-radius:999px;font-weight:800">⏱️ Bereit in ≈ ${estWait} Min</span></div>`
           : `<div class="hint">${isDone ? 'Abgeschlossen – en Guete! 😋' : (isBon ? '🎟️ Zeig diesen Bon am ' + esc(o.standName) : '🎉 Zeig diese Nummer am ' + esc(o.standName))}</div>`}
         ${isReady ? `<button class="btn btn-block btn-lg" data-act="order-received" data-id="${o.id}" style="margin-top:var(--s-4);background:#fff;color:var(--bell-red)">${icon('check')} ${isBon ? 'Bon eingelöst & erhalten' : 'Bestellung erhalten'}</button>` : ''}
+      </div>
+
+      <div class="bell-pass">
+        <div class="bp-l"><span class="bp-k">🎟️ Dein Bell Moment</span><span class="bp-no">${esc(o.pickup)}</span><span class="bp-sub">Danke – dein Grillmoment ist vorbereitet. Beim nächsten Scan direkt erneut bestellen.</span></div>
+        <button class="btn ${isFav ? 'btn-primary' : 'btn-soft'} btn-sm" data-act="fav-toggle" data-id="${o.id}">${isFav ? '★ Favorit' : '☆ Favorit merken'}</button>
       </div>
 
       ${flowHtml(o, idx)}
@@ -508,6 +546,13 @@
     if (delta > 0) buzz(8);
   }
 
+  function loadItemsToCart(items) {
+    const avail = {}; products().forEach(p => avail[p.id] = true);
+    cart = {}; let n = 0;
+    (items || []).forEach(it => { if (avail[it.id]) { cart[it.id] = (cart[it.id] || 0) + it.qty; n += it.qty; } });
+    return n;
+  }
+
   function refreshLive() {
     if (currentView === 'success' && activeOrderId) {
       const inp = el('#chat-inp-success'); const focused = inp && document.activeElement === inp; const val = focused ? inp.value : '';
@@ -521,10 +566,11 @@
       } else {
         renderTrack();
       }
+    } else if (currentView === 'start') {
+      renderWelcomeBack();
     }
   }
 
-  // Auto-Pilot: bringt Bestellungen automatisch voran – ABER nur, wenn KEINE Crew aktiv ist.
   const AUTO = { received: 8, prep: 12, grill: 16, almost: 10 };
   function autoTick() {
     if (!BELL.isCrewActive()) {
@@ -561,15 +607,32 @@
       case 'pay-now': processPay(); break;
       case 'bon-create': processBon(); break;
       case 'order-received': BELL.setStatus(id, 'done'); toast('Abgeschlossen – en Guete!', 'ok'); break;
-      case 'new-order': cart = {}; closeSheets(); renderMenu(); show('menu'); toast('Neue Bestellung – Menü ist bereit'); break;
+      case 'new-order': cart = {}; closeSheets(); renderMenu(); show('menu'); toast('Neuer Grillmoment – das Menü ist bereit'); break;
       case 'reorder': {
         const ord = BELL.getOrder(id); if (!ord) break;
-        const avail = {}; products().forEach(p => avail[p.id] = true);
-        cart = {}; let n = 0;
-        ord.items.forEach(it => { if (avail[it.id]) { cart[it.id] = (cart[it.id] || 0) + it.qty; n += it.qty; } });
+        const n = loadItemsToCart(ord.items);
         closeSheets(); renderMenu(); show('menu');
         if (n > 0) { renderCart(); openSheet('sheet-cart'); toast('In den Warenkorb übernommen', 'ok'); }
         else toast('Diese Artikel sind im aktuellen Event nicht verfügbar', 'warn');
+        break;
+      }
+      case 'order-fav': {
+        const fav = BELL.getFav();
+        const mine = getMine().map(x => BELL.getOrder(x)).filter(Boolean).sort((x, y) => y.createdAt - x.createdAt);
+        const items = fav ? fav.items : (mine[0] ? mine[0].items : null);
+        if (!items) break;
+        const n = loadItemsToCart(items);
+        renderMenu(); show('menu');
+        if (n > 0) { renderCart(); openSheet('sheet-cart'); toast('Dein Favorit ist im Warenkorb', 'ok'); }
+        else toast('Diese Artikel sind im aktuellen Event nicht verfügbar', 'warn');
+        break;
+      }
+      case 'fav-toggle': {
+        const ord = BELL.getOrder(id); if (!ord) break;
+        const fav = BELL.getFav();
+        if (fav && sig(fav.items) === sig(ord.items)) { BELL.clearFav(); toast('Favorit entfernt'); }
+        else { BELL.setFav({ items: ord.items.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })), standName: ord.standName }); toast('Als Favorit gemerkt ★', 'ok'); }
+        renderOrder(id, currentView === 'success' ? 'success' : 'track');
         break;
       }
       case 'track-open': activeOrderId = id; backTarget = 'track'; renderOrder(id, 'track'); show('track'); break;
