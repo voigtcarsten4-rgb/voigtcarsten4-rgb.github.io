@@ -1,8 +1,8 @@
 /* =====================================================================
    BELL FASTLANE — Premium Motion Layer (motion.js)
    Atmosphäre, Fly-to-Cart, Animations-Schalter, Mobile-Härtung,
-   Original-Bell-Logo, App-Feel-Rundungen, visueller Status-Screen.
-   Rein visuell, greift nicht in die Logik ein.
+   Original-Bell-Logo, App-Feel-Rundungen, visueller Status-Screen,
+   Bestellablauf-Journey, Live-Updates. Rein visuell.
    ===================================================================== */
 (function () {
   'use strict';
@@ -32,6 +32,7 @@
       + '.bell-mark.sm{height:30px}.bell-mark.md{height:40px}.bell-mark.lg{height:62px}'
       // ---- App-Feel: rundere, taktilere Elemente ----
       + '.card{border-radius:22px}.btn{border-radius:16px}.btn-lg{border-radius:18px}.product{border-radius:20px}.pay-method{border-radius:18px}.metric,.panel,.kds-stat{border-radius:20px}.sheet{border-radius:28px 28px 0 0}'
+      + '.btn{transition:transform .12s var(--ease),background .2s,box-shadow .2s}.btn:active{transform:scale(.97)}'
       // ---- Mobile-Härtung: kein Abschneiden ----
       + '.product .info,.cart-line>div,.ticket,.ticket .items,.metric,.panel,.kpi,.receipt,.row>*{min-width:0}'
       + '.product .info h3,.product .info .desc,.cart-line .nm{overflow:hidden;text-overflow:ellipsis}'
@@ -64,6 +65,43 @@
       + '.step-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s}'
       + '.step-dots i.done{background:#fff}'
       + '.step-dots i.cur{background:#fff;transform:scale(1.7);box-shadow:0 0 0 4px rgba(255,255,255,.25)}'
+      // ---- Bestellablauf (Journey) ----
+      + '.flow .flow-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}'
+      + '.flow .flow-head h3{font-size:var(--fs-lg)}'
+      + '.flow-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.04em}'
+      + '.flow-live .lv-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:lvpulse 1.6s infinite}'
+      + '@keyframes lvpulse{0%{box-shadow:0 0 0 0 rgba(21,146,78,.5)}70%{box-shadow:0 0 0 7px rgba(21,146,78,0)}100%{box-shadow:0 0 0 0 rgba(21,146,78,0)}}'
+      + '.flow-step{position:relative;display:flex;align-items:center;gap:14px;padding:9px 0}'
+      + '.flow-step:not(:last-child)::after{content:"";position:absolute;left:22px;top:48px;bottom:-9px;width:2px;background:var(--line-2)}'
+      + '.flow-step.done:not(:last-child)::after{background:var(--success)}'
+      + '.fs-ico{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line);transition:transform .3s,box-shadow .3s,background .3s;position:relative;z-index:1}'
+      + '.fs-ico img{width:30px;height:30px;opacity:.45;transition:opacity .3s}'
+      + '.flow-step.done .fs-ico{background:var(--success-bg);box-shadow:inset 0 0 0 2px var(--success)}'
+      + '.flow-step.done .fs-ico img{opacity:.9}'
+      + '.flow-step.cur .fs-ico{background:#fff;box-shadow:0 0 0 3px var(--bell-red),0 8px 18px rgba(226,0,26,.25);transform:scale(1.07)}'
+      + '.flow-step.cur .fs-ico img{opacity:1}'
+      + '.flow-step.cur .fs-ico img[src*="sym-pickup"]{animation:walk 1.05s ease-in-out infinite}'
+      + '.fs-body{display:flex;flex-direction:column;min-width:0}'
+      + '.fs-body b{font-size:var(--fs-md);font-weight:800}'
+      + '.fs-body span{font-size:var(--fs-sm);color:var(--ink-2)}'
+      + '.flow-step.todo .fs-body b{color:var(--ink-3)}'
+      + '.flow-step.todo .fs-body span{color:var(--ink-3)}'
+      + '.fs-mark{margin-left:auto;color:var(--success);display:grid;place-items:center;width:24px;height:24px;flex:none}'
+      + '.fs-mark svg{width:20px;height:20px}'
+      + '.fs-pulse{width:11px;height:11px;border-radius:50%;background:var(--bell-red);animation:lvpulse 1.5s infinite}'
+      + 'body.motion-off .flow-step .fs-ico img{animation:none!important}'
+      + 'body.motion-off .flow-live .lv-dot,body.motion-off .fs-pulse{animation:none!important}'
+      // live "just advanced" pop
+      + '.status-hero.just{animation:pop .6s var(--ease)}'
+      + '.flow-step.just .fs-ico{animation:pop .6s var(--ease)}'
+      + '@keyframes pop{0%{transform:scale(1)}30%{transform:scale(1.14)}100%{transform:scale(1)}}'
+      + 'body.motion-off .status-hero.just,body.motion-off .flow-step.just .fs-ico{animation:none!important}'
+      // system message (indirekte Kommunikation Crew → Gast)
+      + '.sys-msg{display:block;max-width:92%;text-align:center;background:var(--surface-2);color:var(--ink-2);font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:14px;margin:6px auto;border:1px solid var(--line)}'
+      + '.sys-msg .tm{display:block;font-size:10px;color:var(--ink-3);font-weight:500;margin-top:1px}'
+      // crew ticket stage symbol
+      + '.t-stage{display:flex;align-items:center;gap:8px;margin:2px 0 4px}'
+      + '.tk-sym{width:26px;height:26px;flex:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.15))}'
       // ---- Crew-Wartezeit-Ampel ----
       + '.ticket.urge-warn{box-shadow:0 0 0 2px var(--warn),var(--sh-2)}'
       + '.ticket.urge-late{box-shadow:0 0 0 2px var(--bell-red),var(--sh-2);animation:urgePulse 1.7s infinite}'
