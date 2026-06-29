@@ -1,0 +1,10 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="In Zubereitung">
+  <g fill="#ffffff">
+    <circle cx="43" cy="42" r="16"/>
+    <circle cx="77" cy="42" r="16"/>
+    <circle cx="60" cy="33" r="18"/>
+    <rect x="41" y="50" width="38" height="24" rx="5"/>
+  </g>
+  <rect x="41" y="60" width="38" height="5" fill="#E6DED2"/>
+  <path d="M60 80 c5 6 -3 9 -1 15 a7 7 0 0 0 13 0 c0 -4 -2 -6 -4 -8 5 2 8 6 8 11 a13 13 0 0 1 -26 0 c0 -8 6 -12 10 -18 Z" fill="#FF7A1A"/>
+</svg>
