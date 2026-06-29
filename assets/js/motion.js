@@ -1,8 +1,8 @@
 /* =====================================================================
    BELL FASTLANE — Premium Motion Layer (motion.js)
-   Atmosphäre (Glut/Hitze/Intro), Fly-to-Cart, Animations-Schalter
-   + Mobile-Härtung (verhindert abgeschnittene Kacheln) + Bild-Zoom
-   + Crew-Ampel-Styles. Rein visuell, greift nicht in die Logik ein.
+   Atmosphäre, Fly-to-Cart, Animations-Schalter, Mobile-Härtung,
+   Original-Bell-Logo, App-Feel-Rundungen, visueller Status-Screen.
+   Rein visuell, greift nicht in die Logik ein.
    ===================================================================== */
 (function () {
   'use strict';
@@ -27,6 +27,11 @@
       + 'body.motion-off .demo-flag .dot{animation:none!important}'
       + 'body.motion-off .ticket{animation:none!important}'
       + 'body.motion-off .tl-step.current .dot{animation:none!important}'
+      // ---- Original Bell-Logo statt generischer Wortmarke ----
+      + '.bell-mark{background:url("assets/img/bell-logo.svg") center/contain no-repeat!important;color:transparent!important;font-size:0!important;line-height:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;aspect-ratio:200/132;width:auto}'
+      + '.bell-mark.sm{height:30px}.bell-mark.md{height:40px}.bell-mark.lg{height:62px}'
+      // ---- App-Feel: rundere, taktilere Elemente ----
+      + '.card{border-radius:22px}.btn{border-radius:16px}.btn-lg{border-radius:18px}.product{border-radius:20px}.pay-method{border-radius:18px}.metric,.panel,.kds-stat{border-radius:20px}.sheet{border-radius:28px 28px 0 0}'
       // ---- Mobile-Härtung: kein Abschneiden ----
       + '.product .info,.cart-line>div,.ticket,.ticket .items,.metric,.panel,.kpi,.receipt,.row>*{min-width:0}'
       + '.product .info h3,.product .info .desc,.cart-line .nm{overflow:hidden;text-overflow:ellipsis}'
@@ -42,6 +47,23 @@
       +   '.hero .inner{min-height:54vh}.metric .v{font-size:var(--fs-xl)}'
       +   '#recent .row span{min-width:0}'
       + '}'
+      // ---- Visueller Status-Screen (App-Gefühl) ----
+      + '.status-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:24px 20px;border-radius:24px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--sh-3)}'
+      + '.status-hero .symwrap{width:108px;height:108px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;margin-bottom:4px;box-shadow:0 12px 30px rgba(0,0,0,.18)}'
+      + '.status-hero .symwrap img{width:74px;height:74px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.28))}'
+      + '.status-hero .bl{font-size:22px;font-weight:900;letter-spacing:-.02em}'
+      + '.status-hero .sl{font-size:13.5px;opacity:.95;max-width:32ch}'
+      + '.sh-received{background:linear-gradient(160deg,#6B7A8F,#4d5969)}'
+      + '.sh-prep,.sh-grill,.sh-almost{background:linear-gradient(160deg,#E2001A,#7E0010)}'
+      + '.sh-ready{background:linear-gradient(160deg,#16A357,#0d6b39)}'
+      + '.sh-done{background:linear-gradient(160deg,#9A938C,#6f6962)}'
+      + '.status-hero.sh-ready .symwrap img{animation:walk 1.05s ease-in-out infinite}'
+      + '@keyframes walk{0%,100%{transform:translateX(-3px) rotate(-3deg)}50%{transform:translateX(3px) rotate(3deg)}}'
+      + 'body.motion-off .status-hero .symwrap img{animation:none!important}'
+      + '.step-dots{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:14px}'
+      + '.step-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s}'
+      + '.step-dots i.done{background:#fff}'
+      + '.step-dots i.cur{background:#fff;transform:scale(1.7);box-shadow:0 0 0 4px rgba(255,255,255,.25)}'
       // ---- Crew-Wartezeit-Ampel ----
       + '.ticket.urge-warn{box-shadow:0 0 0 2px var(--warn),var(--sh-2)}'
       + '.ticket.urge-late{box-shadow:0 0 0 2px var(--bell-red),var(--sh-2);animation:urgePulse 1.7s infinite}'
@@ -81,16 +103,14 @@
     hero.appendChild(em);
     if (window.gsap) {
       var sw = document.createElement('div'); sw.className = 'fx-sweep'; hero.appendChild(sw);
-      window.gsap.fromTo(sw, { x: '-120%' }, { x: '120%', duration: 1.5, ease: 'power2.inOut', delay: .35,
-        onComplete: function () { sw.remove(); } });
+      window.gsap.fromTo(sw, { x: '-120%' }, { x: '120%', duration: 1.5, ease: 'power2.inOut', delay: .35, onComplete: function () { sw.remove(); } });
     }
   }
 
   function intro() {
     if (!on || !window.gsap) return;
     try { window.gsap.from('.appbar .inner > *', { y: -12, opacity: 0, stagger: .05, duration: .4, ease: 'power2.out' }); } catch (e) {}
-    var hero = ['.hero .kicker', '.hero h1', '.hero .lead', '.hero .loc', '.hero .cta']
-      .map(function (s) { return document.querySelector(s); }).filter(Boolean);
+    var hero = ['.hero .kicker', '.hero h1', '.hero .lead', '.hero .loc', '.hero .cta'].map(function (s) { return document.querySelector(s); }).filter(Boolean);
     if (hero.length) { try { window.gsap.from(hero, { y: 20, opacity: 0, stagger: .09, duration: .55, ease: 'power3.out', delay: .1 }); } catch (e) {} }
   }
 
